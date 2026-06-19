@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zolaris · Automatizador de Cotizaciones</title>
+  <link rel="icon" type="image/png" href="recursos/icon.png">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <!-- Cabecera principal con el logotipo real de la marca -->
+  <header class="cabecera" id="cabeceraApp">
+    <div class="cabecera__marca">
+      <img class="cabecera__logo" src="recursos/logo-color.png" alt="Zolaris Paneles Solares">
+    </div>
+    <nav class="cabecera__nav" aria-label="Navegación principal">
+      <button type="button" class="boton boton--enlace boton--activo" id="navNueva">
+        Nueva cotización
+      </button>
+      <button type="button" class="boton boton--enlace" id="navHistorial">
+        Historial
+      </button>
+    </nav>
+  </header>
+
+  <main class="contenido">
+    <!-- Sección: formulario de nueva cotización -->
+    <section class="seccion" id="seccionFormulario" aria-labelledby="tituloFormulario">
+      <div class="hero">
+        <div class="hero__texto">
+          <h1 class="hero__titulo" id="tituloFormulario">Cotizador Solar Inteligente</h1>
+          <p class="hero__sub">
+            Genera propuestas profesionales de energía solar en segundos.
+            Completa los datos del cliente y obtén su cotización lista para enviar.
+          </p>
+        </div>
+        <div class="hero__sol" aria-hidden="true"></div>
+      </div>
+
+      <form class="formulario" id="formularioCotizacion" novalidate>
+        <div class="grupo-campos">
+          <h2 class="grupo-campos__titulo">Datos del cliente</h2>
+          <div class="grupo-campos__rejilla">
+            <div class="campo campo--ancho">
+              <label class="campo__etiqueta" for="campoNombre">Nombre del cliente</label>
+              <input class="campo__entrada" id="campoNombre" name="nombre" type="text"
+                     autocomplete="off" placeholder="Ej. Institución Universitaria Escolme">
+              <span class="campo__error" data-error-de="nombre" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoCiudad">Ciudad</label>
+              <select class="campo__entrada" id="campoCiudad" name="ciudad">
+                <option value="">Selecciona una ciudad…</option>
+              </select>
+              <span class="campo__error" data-error-de="ciudad" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoTecho">Tipo de techo</label>
+              <select class="campo__entrada" id="campoTecho" name="tipoTecho">
+                <option value="">Selecciona…</option>
+              </select>
+              <span class="campo__error" data-error-de="tipoTecho" role="alert"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grupo-campos">
+          <h2 class="grupo-campos__titulo">Consumo y tarifa</h2>
+          <div class="grupo-campos__rejilla">
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoConsumo">Consumo promedio (kWh/mes)</label>
+              <input class="campo__entrada" id="campoConsumo" name="consumo" type="number"
+                     min="1" step="any" inputmode="decimal" placeholder="Ej. 6500">
+              <span class="campo__error" data-error-de="consumo" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoPrecio">Precio del kWh (COP)</label>
+              <input class="campo__entrada" id="campoPrecio" name="precioKwh" type="number"
+                     min="1" step="any" inputmode="decimal" placeholder="Ej. 1000">
+              <span class="campo__error" data-error-de="precioKwh" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoPorcentaje">Porcentaje a suplir (%)</label>
+              <input class="campo__entrada" id="campoPorcentaje" name="porcentaje" type="number"
+                     min="1" max="100" step="any" inputmode="decimal" value="100">
+              <span class="campo__error" data-error-de="porcentaje" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoDescuento">Descuento (%)</label>
+              <input class="campo__entrada" id="campoDescuento" name="descuento" type="number"
+                     step="any" inputmode="decimal" value="0">
+              <span class="campo__ayuda">Usa valores positivos para aplicar rebaja.</span>
+              <span class="campo__error" data-error-de="descuento" role="alert"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grupo-campos">
+          <h2 class="grupo-campos__titulo">Imagen y opciones</h2>
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta" for="campoImagen">Imagen del proyecto con paneles (opcional)</label>
+            <input class="campo__entrada" id="campoImagen" name="imagen" type="file"
+                   accept="image/*">
+            <span class="campo__ayuda">Sube la foto del lugar <strong>ya editada con los paneles solares</strong>
+              (la que generas con tu herramienta de IA). Se incrustará tal cual en la portada y la
+              página técnica. Si no subes ninguna, se usan las fotos por defecto.</span>
+            <div class="vista-previa-imagen oculto" id="vistaPreviaImagen">
+              <img class="vista-previa-imagen__img" id="imagenPrevia" alt="Vista previa del proyecto">
+              <button type="button" class="boton boton--secundario" id="botonQuitarImagen">Quitar imagen</button>
+            </div>
+          </div>
+
+        <!-- Parámetros financieros avanzados (predefinidos, editables) -->
+        <details class="parametros campo--ancho">
+          <summary class="parametros__titulo">Parámetros financieros avanzados</summary>
+          <div class="parametros__rejilla">
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoVentaExced">Tarifa venta excedentes (COP/kWh)</label>
+              <input class="campo__entrada" id="campoVentaExced" name="tarifaVentaExcedentes"
+                     type="number" step="any" inputmode="decimal" value="330">
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoIncremento">Incremento anual de tarifa (%)</label>
+              <input class="campo__entrada" id="campoIncremento" name="incrementoTarifa"
+                     type="number" step="any" inputmode="decimal" value="5.5">
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoInflacion">Inflación proyectada (%)</label>
+              <input class="campo__entrada" id="campoInflacion" name="inflacion"
+                     type="number" step="any" inputmode="decimal" value="4.3">
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoDegradacion">Degradación anual paneles (%)</label>
+              <input class="campo__entrada" id="campoDegradacion" name="degradacionAnual"
+                     type="number" step="any" inputmode="decimal" value="0.4">
+            </div>
+          </div>
+        </details>
+        </div>
+
+        <div class="formulario__acciones">
+          <button type="submit" class="boton boton--primario boton--grande">Calcular cotización</button>
+          <button type="reset" class="boton boton--secundario" id="botonLimpiar">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Sección: resultados de la cotización (oculta hasta calcular) -->
+    <section class="seccion oculto" id="seccionResultado" aria-labelledby="tituloResultado">
+      <h2 class="seccion__titulo" id="tituloResultado">Resultado de la cotización</h2>
+      <div class="resultado" id="contenedorResultado"></div>
+      <div class="formulario__acciones">
+        <button type="button" class="boton boton--primario" id="botonImprimir">Generar PDF</button>
+        <button type="button" class="boton boton--secundario" id="botonGuardar">Guardar cotización</button>
+        <button type="button" class="boton boton--secundario" id="botonNueva">Nueva cotización</button>
+      </div>
+      <p class="acciones__ayuda">
+        Al pulsar «Generar PDF» se abre el diálogo de impresión: elige
+        «Guardar como PDF», orientación horizontal y activa «Gráficos en
+        segundo plano» para conservar fondos y colores.
+      </p>
+    </section>
+
+    <!-- Sección: historial de cotizaciones guardadas (oculta por defecto) -->
+    <section class="seccion oculto" id="seccionHistorial" aria-labelledby="tituloHistorial">
+      <h2 class="seccion__titulo" id="tituloHistorial">Historial de cotizaciones</h2>
+      <div class="historial" id="contenedorHistorial"></div>
+    </section>
+  </main>
+
+  <!-- Vista imprimible: se rellena al imprimir y solo es visible en @media print -->
+  <div class="hoja-pdf" id="hojaPdf" aria-hidden="true"></div>
+
+  <!-- Contenedor de avisos tipo "toast" -->
+  <div class="avisos" id="contenedorAvisos" aria-live="polite"></div>
+
+  <!-- Modal de confirmación reutilizable (estilo de marca) -->
+  <div class="modal oculto" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+    <div class="modal__caja">
+      <h3 class="modal__titulo" id="modalTitulo"></h3>
+      <p class="modal__mensaje" id="modalMensaje"></p>
+      <div class="modal__acciones">
+        <button type="button" class="boton boton--secundario" id="modalCancelar">Cancelar</button>
+        <button type="button" class="boton boton--primario" id="modalConfirmar">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/calculos.js"></script>
+  <script src="js/almacenamiento.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

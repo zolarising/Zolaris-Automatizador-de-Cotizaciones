@@ -1,0 +1,939 @@
+/**
+ * estilos.css
+ * Hoja de estilos de la app de cotizaciones Zolaris.
+ * Base de tipografía 10px → todas las medidas en rem. Colores de la marca.
+ * Maquetación con Flexbox y CSS Grid; responsive; bloque @media print para el PDF.
+ */
+
+:root {
+  /* base 10px: 1rem = 10px */
+  font-size: 10px;
+
+  /* Paleta de marca (logo Zolaris) */
+  --azul: #1b2a4a;
+  --azul-claro: #2d4373;
+  --azul-profundo: #11203f;
+  --naranja: #f5a623;
+  --amarillo: #fbb040;
+  --gris-claro: #f4f6fb;
+  --gris-borde: #dce1ec;
+  --gris-texto: #5b6680;
+  --blanco: #ffffff;
+  --verde: #2e9b5b;
+  --rojo: #c0392b;
+
+  --radio: 1.4rem;
+  --radio-chico: 0.8rem;
+  --sombra: 0 0.6rem 2.4rem rgba(27, 42, 74, 0.10);
+  --sombra-fuerte: 0 1.2rem 3.6rem rgba(27, 42, 74, 0.18);
+  --degradado-marca: linear-gradient(120deg, var(--azul-profundo) 0%, var(--azul) 55%, var(--azul-claro) 100%);
+  --degradado-sol: linear-gradient(135deg, var(--naranja), var(--amarillo));
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.55;
+  color: var(--azul);
+  background:
+    radial-gradient(120rem 60rem at 100% -10%, rgba(245, 166, 35, 0.10), transparent 60%),
+    radial-gradient(100rem 60rem at -10% 110%, rgba(45, 67, 115, 0.10), transparent 55%),
+    var(--gris-claro);
+  min-height: 100vh;
+}
+
+.oculto {
+  display: none !important;
+}
+
+/* ---------- Cabecera ---------- */
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.4rem 3rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(0.8rem);
+  border-bottom: 0.1rem solid var(--gris-borde);
+  box-shadow: 0 0.2rem 1.2rem rgba(27, 42, 74, 0.05);
+}
+
+.cabecera__marca {
+  display: flex;
+  align-items: center;
+}
+
+.cabecera__logo {
+  height: 4.4rem;
+  width: auto;
+  display: block;
+}
+
+.cabecera__nav {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* ---------- Botones ---------- */
+.boton {
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 1.1rem 2rem;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.boton:active { transform: translateY(0.1rem); }
+
+.boton--primario {
+  background: var(--degradado-sol);
+  color: var(--azul);
+  box-shadow: 0 0.6rem 1.6rem rgba(245, 166, 35, 0.35);
+}
+
+.boton--primario:hover {
+  box-shadow: 0 0.9rem 2.2rem rgba(245, 166, 35, 0.45);
+  transform: translateY(-0.1rem);
+}
+
+.boton--grande {
+  font-size: 1.7rem;
+  padding: 1.4rem 3rem;
+}
+
+.boton--secundario {
+  background-color: var(--blanco);
+  color: var(--azul);
+  border: 0.15rem solid var(--gris-borde);
+}
+
+.boton--secundario:hover {
+  border-color: var(--naranja);
+  color: var(--azul);
+}
+
+.boton--enlace {
+  background: transparent;
+  color: var(--gris-texto);
+  padding: 0.8rem 1.4rem;
+  border-radius: 5rem;
+  font-weight: 600;
+}
+
+.boton--enlace:hover { color: var(--azul); background-color: var(--gris-claro); }
+
+.boton--activo {
+  background-color: var(--azul);
+  color: var(--blanco);
+}
+.boton--activo:hover { background-color: var(--azul); color: var(--blanco); }
+
+.boton--peligro {
+  background-color: transparent;
+  color: var(--rojo);
+  border: 0.15rem solid var(--rojo);
+}
+.boton--peligro:hover { background-color: var(--rojo); color: var(--blanco); }
+
+/* ---------- Contenido y secciones ---------- */
+.contenido {
+  max-width: 104rem;
+  margin: 0 auto;
+  padding: 3rem 2rem 7rem;
+}
+
+.seccion {
+  background-color: var(--blanco);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 3rem;
+  margin-bottom: 2.4rem;
+  border: 0.1rem solid rgba(220, 225, 236, 0.6);
+}
+
+.seccion__titulo {
+  font-size: 2.4rem;
+  margin-bottom: 0.8rem;
+  color: var(--azul);
+}
+
+.seccion__intro {
+  color: var(--gris-texto);
+  margin-bottom: 2rem;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--degradado-marca);
+  color: var(--blanco);
+  border-radius: var(--radio);
+  padding: 3.6rem 3.6rem;
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.hero__titulo {
+  font-size: 3.4rem;
+  font-weight: 800;
+  letter-spacing: 0.05rem;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+
+.hero__sub {
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 56rem;
+}
+
+/* Sol decorativo del hero */
+.hero__sol {
+  position: absolute;
+  right: -6rem;
+  top: -6rem;
+  width: 26rem;
+  height: 26rem;
+  border-radius: 50%;
+  background: var(--degradado-sol);
+  opacity: 0.85;
+  box-shadow: 0 0 8rem rgba(245, 166, 35, 0.6);
+  flex-shrink: 0;
+}
+
+/* ---------- Grupos de campos ---------- */
+.grupo-campos {
+  margin-bottom: 2.4rem;
+}
+
+.grupo-campos__titulo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12rem;
+  color: var(--naranja);
+  padding-bottom: 0.8rem;
+  margin-bottom: 1.6rem;
+  border-bottom: 0.2rem solid var(--gris-borde);
+}
+
+.grupo-campos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.6rem 2rem;
+}
+
+/* ---------- Formulario ---------- */
+.formulario {
+  display: block;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.campo--ancho {
+  grid-column: 1 / -1;
+}
+
+/* Vista previa de la imagen del proyecto */
+.vista-previa-imagen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.vista-previa-imagen__img {
+  max-width: 100%;
+  max-height: 24rem;
+  border-radius: var(--radio);
+  border: 0.1rem solid var(--gris-borde);
+}
+
+/* Parámetros avanzados (acordeón) */
+.parametros {
+  grid-column: 1 / -1;
+  border: 0.1rem solid var(--gris-borde);
+  border-radius: var(--radio);
+  padding: 1.2rem 1.6rem;
+  background-color: var(--gris-claro);
+}
+
+.parametros__titulo {
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
+.parametros__rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.4rem 2rem;
+  margin-top: 1.4rem;
+}
+
+.campo__etiqueta {
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--azul);
+}
+
+.campo__entrada {
+  font: inherit;
+  font-size: 1.5rem;
+  padding: 1.2rem 1.4rem;
+  border: 0.15rem solid var(--gris-borde);
+  border-radius: var(--radio-chico);
+  background-color: var(--gris-claro);
+  color: var(--azul);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.campo__entrada:focus {
+  outline: none;
+  border-color: var(--naranja);
+  background-color: var(--blanco);
+  box-shadow: 0 0 0 0.3rem rgba(245, 166, 35, 0.22);
+}
+
+.campo__entrada--invalido {
+  border-color: var(--rojo);
+}
+
+.campo__ayuda {
+  font-size: 1.2rem;
+  color: var(--gris-texto);
+}
+
+.campo__error {
+  font-size: 1.2rem;
+  color: var(--rojo);
+  min-height: 1.4rem;
+}
+
+.formulario__acciones {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+}
+
+.acciones__ayuda {
+  font-size: 1.25rem;
+  color: var(--gris-texto);
+  margin-top: 1.2rem;
+  line-height: 1.5;
+}
+
+/* ---------- Resultado ---------- */
+.resultado {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.tarjeta {
+  border: 0.1rem solid var(--gris-borde);
+  border-radius: var(--radio);
+  overflow: hidden;
+  box-shadow: var(--sombra);
+  background-color: var(--blanco);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tarjeta:hover {
+  transform: translateY(-0.3rem);
+  box-shadow: var(--sombra-fuerte);
+}
+
+.tarjeta--ancha {
+  grid-column: 1 / -1;
+}
+
+.tarjeta__titulo {
+  background: var(--degradado-marca);
+  color: var(--blanco);
+  font-size: 1.6rem;
+  font-weight: 700;
+  padding: 1.2rem 1.6rem;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 0.1rem solid var(--gris-borde);
+  font-size: 1.4rem;
+}
+
+.tabla td:last-child,
+.tabla th:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla__destacado td {
+  font-weight: 700;
+  background-color: var(--gris-claro);
+  color: var(--azul);
+}
+
+.tabla__rebaja td {
+  color: var(--verde);
+}
+
+/* ---------- Historial ---------- */
+.historial {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.historial__vacio {
+  color: var(--gris-texto);
+}
+
+.tarjeta-historial {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  border: 0.1rem solid var(--gris-borde);
+  border-left: 0.5rem solid var(--naranja);
+  border-radius: var(--radio);
+  padding: 1.4rem 1.6rem;
+}
+
+.tarjeta-historial__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tarjeta-historial__nombre {
+  font-size: 1.7rem;
+  font-weight: 600;
+}
+
+.tarjeta-historial__meta {
+  font-size: 1.3rem;
+  color: var(--gris-texto);
+}
+
+.tarjeta-historial__acciones {
+  display: flex;
+  gap: 0.8rem;
+}
+
+/* ---------- Avisos (toasts) ---------- */
+.avisos {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 50;
+}
+
+.aviso {
+  background-color: var(--azul);
+  color: var(--blanco);
+  padding: 1.2rem 1.8rem;
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  border-left: 0.5rem solid var(--naranja);
+  font-size: 1.4rem;
+  max-width: 32rem;
+}
+
+.aviso--exito {
+  border-left-color: var(--verde);
+}
+
+.aviso--error {
+  border-left-color: var(--rojo);
+}
+
+/* ---------- Modal ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(27, 42, 74, 0.55);
+  z-index: 60;
+  padding: 2rem;
+}
+
+.modal__caja {
+  background-color: var(--blanco);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  border-top: 0.5rem solid var(--naranja);
+  padding: 2.4rem;
+  max-width: 42rem;
+  width: 100%;
+}
+
+.modal__titulo {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.modal__mensaje {
+  color: var(--gris-texto);
+  margin-bottom: 2rem;
+}
+
+.modal__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.2rem;
+}
+
+/* ---------- Vista imprimible (oculta en pantalla) ---------- */
+.hoja-pdf {
+  display: none;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 48rem) {
+  .grupo-campos__rejilla,
+  .resultado,
+  .parametros__rejilla {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 2.8rem 2rem;
+  }
+  .hero__titulo { font-size: 2.8rem; }
+  .hero__sol { display: none; }
+
+  .cabecera {
+    justify-content: center;
+  }
+}
+
+/* ================================================================= */
+/* HOJA IMPRIMIBLE — réplica fiel de la plantilla "COTIZACIONES       */
+/* ZOLARIS.pptm". Diapositivas 16:9 (20 x 11.25 pulg) con elementos   */
+/* posicionados en % según las medidas reales del PowerPoint.         */
+/* Usa las imágenes y logos reales de la carpeta contenido_pdf.       */
+/* ================================================================= */
+
+.hoja-pdf { display: none; }
+
+/* Diapositiva base: relación 16:9. El contenido se posiciona en % sobre ella. */
+.diapo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 20 / 11.25;
+  background-color: var(--blanco);
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  /* 1cqw = 1% del ancho; se usa para tipografía proporcional a la diapositiva */
+  container-type: inline-size;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  color: var(--azul);
+}
+.diapo:last-child { page-break-after: auto; break-after: auto; }
+
+/* Capas absolutas dentro de la diapositiva */
+.capa {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.fondo-completo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.velo {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 18, 35, 0.45);
+}
+
+/* Logo común arriba-derecha (páginas 4-7): x=71.9% y=1.5% w=24.8% */
+.logo-sup {
+  position: absolute;
+  left: 71.9%;
+  top: 2.5%;
+  width: 24.8%;
+}
+.logo-sup img { width: 100%; display: block; }
+
+/* Banda de título redondeada azul (páginas 4-8): x=5.8% y=3.6% */
+.titulo-banda {
+  position: absolute;
+  left: 5.8%;
+  top: 3.6%;
+  background: linear-gradient(90deg, var(--azul), var(--azul-claro));
+  color: var(--blanco);
+  font-style: italic;
+  font-weight: 800;
+  border-radius: 1.2cqw;
+  padding: 1.4cqw 2.4cqw;
+  font-size: 3.2cqw;
+}
+
+/* ---------- Diapositiva 1: PORTADA ---------- */
+.portada-logo {
+  position: absolute;
+  left: 25%;
+  top: 26%;
+  width: 50%;
+}
+.portada-logo img { width: 100%; }
+.portada-txt {
+  position: absolute;
+  left: 2.1%;
+  color: var(--blanco);
+  font-weight: 800;
+  text-shadow: 0 0.2cqw 0.6cqw rgba(0,0,0,0.5);
+}
+.portada-titulo { top: 71%; font-size: 2.3cqw; width: 62%; line-height: 1.15; }
+.portada-ahorro { top: 83%; font-size: 1.6cqw; font-weight: 600; color: var(--amarillo); }
+.portada-datos { top: 87%; font-size: 1.9cqw; }
+.portada-contacto {
+  position: absolute;
+  right: 2.5%;
+  top: 80%;
+  color: var(--blanco);
+  text-align: right;
+  font-size: 1.5cqw;
+  line-height: 1.7;
+  text-shadow: 0 0.2cqw 0.6cqw rgba(0,0,0,0.5);
+}
+
+/* ---------- Diapositiva 2: GALERÍA 3x3 ---------- */
+.galeria-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+.galeria-celda { position: relative; overflow: hidden; }
+.galeria-celda img { width: 100%; height: 100%; object-fit: cover; }
+.galeria-etq {
+  position: absolute;
+  left: 8%;
+  bottom: 8%;
+  background-color: var(--naranja);
+  color: var(--azul);
+  font-weight: 800;
+  font-size: 1.5cqw;
+  padding: 0.5cqw 1.1cqw;
+  border-radius: 0.4cqw;
+}
+
+/* ---------- Diapositiva 3: MARKETING ---------- */
+.mkt-titulo {
+  position: absolute;
+  left: 9%;
+  top: 10%;
+  width: 82%;
+  color: var(--blanco);
+  font-weight: 800;
+  font-size: 3.2cqw;
+}
+.mkt-lista {
+  position: absolute;
+  left: 5.8%;
+  top: 38%;
+  width: 40%;
+  color: var(--blanco);
+  list-style: none;
+  font-size: 2.1cqw;
+  line-height: 2.4;
+}
+.mkt-lista li::before { content: '› '; color: var(--naranja); font-weight: 800; }
+.mkt-grafico {
+  position: absolute;
+  left: 46%;
+  top: 30%;
+  width: 50%;
+  height: 48%;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6cqw;
+}
+.mkt-grafico .barra { flex: 1; background: linear-gradient(180deg,#c0392b,#e74c3c); border-radius: 0.3cqw 0.3cqw 0 0; }
+
+/* ---------- Diapositiva 4: TÉCNICA ---------- */
+.tec-proyecto {
+  position: absolute;
+  left: 5.8%;
+  top: 3.5%;
+  width: 45%;
+  font-size: 3cqw;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.tec-sub {
+  position: absolute;
+  left: 5.8%;
+  top: 18%;
+  width: 45%;
+  font-size: 1.5cqw;
+  color: var(--gris-texto);
+}
+.tec-imagen {
+  position: absolute;
+  left: 7.1%;
+  top: 26%;
+  width: 35.7%;
+  height: 40%;
+  object-fit: cover;
+  border-radius: 0.6cqw;
+}
+.tec-tabla {
+  position: absolute;
+  left: 7.1%;
+  top: 68%;
+  width: 35.7%;
+  border-collapse: collapse;
+  font-size: 1.35cqw;
+}
+.tec-tabla td { padding: 0.45cqw 1cqw; border-bottom: 0.08cqw solid var(--gris-borde); }
+.tec-tabla td:last-child { text-align: right; font-weight: 700; }
+.tec-tabla__cab td {
+  background-color: var(--azul);
+  color: var(--blanco);
+  font-weight: 700;
+  text-align: center;
+}
+.tec-titulo-der {
+  position: absolute;
+  left: 50.5%;
+  top: 19%;
+  width: 45%;
+  font-size: 2.2cqw;
+  font-weight: 800;
+  color: var(--azul);
+  text-align: center;
+}
+/* iconos + valores: dos columnas (x≈51% y x≈74-80%) */
+.tec-icono {
+  position: absolute;
+  width: 4cqw;
+}
+.tec-icono img { width: 100%; }
+.tec-valor {
+  position: absolute;
+  font-weight: 800;
+  font-size: 1.5cqw;
+  color: var(--azul);
+  width: 17cqw;
+  line-height: 1.15;
+}
+
+/* ---------- Diapositiva 5: TECNOLOGÍA ---------- */
+.tecno-sub {
+  position: absolute;
+  left: 6.5%;
+  top: 17.6%;
+  font-size: 1.9cqw;
+  color: var(--gris-texto);
+}
+.tecno-tabla {
+  position: absolute;
+  left: 7%;
+  top: 27%;
+  width: 40%;
+  border-collapse: collapse;
+  font-size: 1.55cqw;
+}
+.tecno-tabla td { padding: 0.55cqw 1cqw; border-bottom: 0.08cqw solid var(--gris-borde); }
+.tecno-tabla td:last-child { text-align: center; font-weight: 700; width: 18%; }
+.tecno-tabla__cab td { background-color: var(--azul); color: var(--blanco); font-weight: 700; }
+/* Fotos de panel e inversor (arriba-derecha) */
+.tecno-equipo { position: absolute; }
+.tecno-equipo img { width: 100%; display: block; }
+.tecno-equipo--panel { left: 56%; top: 22%; width: 9%; }
+.tecno-equipo--inversor { left: 70%; top: 22%; width: 14%; }
+.tecno-marcas {
+  position: absolute;
+  left: 53%;
+  top: 50%;
+  width: 44%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2cqw 1.5cqw;
+  align-items: center;
+  justify-items: center;
+}
+.tecno-marcas img { max-width: 90%; max-height: 5.5cqw; }
+.tecno-garantias {
+  position: absolute;
+  left: 7%;
+  top: 84%;
+  width: 88%;
+  font-size: 1.2cqw;
+  color: var(--gris-texto);
+  line-height: 1.6;
+}
+
+/* ---------- Diapositiva 6: MODELOS DE NEGOCIO ---------- */
+.neg-tabla {
+  position: absolute;
+  border-collapse: collapse;
+  font-size: 1.55cqw;
+}
+.neg-tabla--compra { left: 8%; top: 21%; width: 38%; }
+.neg-tabla--leasing { left: 55%; top: 21%; width: 38%; }
+.neg-tabla td { padding: 0.6cqw 1cqw; border-bottom: 0.08cqw solid var(--gris-borde); }
+.neg-tabla td:last-child { text-align: right; font-weight: 700; }
+.neg-tabla__cab td { background-color: var(--azul); color: var(--blanco); font-weight: 700; text-align: center; }
+.neg-grafico {
+  position: absolute;
+  top: 60%;
+  height: 26%;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4cqw;
+}
+.neg-grafico--compra { left: 8%; width: 38%; }
+.neg-grafico--leasing { left: 55%; width: 38%; }
+.neg-grafico .barra { flex: 1; background: linear-gradient(180deg,var(--azul-claro),var(--azul)); }
+.neg-grafico .barra--neg { background: linear-gradient(180deg,#e74c3c,#c0392b); }
+.neg-pie {
+  position: absolute;
+  top: 89%;
+  font-style: italic;
+  font-size: 1.4cqw;
+  color: var(--gris-texto);
+}
+.neg-pie--compra { left: 11%; width: 36%; }
+.neg-pie--leasing { left: 60%; width: 36%; }
+
+/* ---------- Diapositiva 7: LO QUE INCLUYE ---------- */
+.inc-bloque { position: absolute; }
+.inc-bloque h4 { font-size: 2.1cqw; color: var(--azul); margin-bottom: 1cqw; }
+.inc-bloque ul { list-style: none; font-size: 1.55cqw; line-height: 2; }
+.inc-bloque li::before { content: '• '; color: var(--naranja); }
+.inc-bloque div { font-size: 1.55cqw; line-height: 1.9; }
+.inc-entrega {
+  position: absolute;
+  left: 52.9%;
+  top: 92.5%;
+  width: 44%;
+  background: linear-gradient(90deg,var(--azul),var(--azul-claro));
+  color: var(--blanco);
+  font-style: italic;
+  font-size: 1.4cqw;
+  padding: 0.8cqw 1.4cqw;
+  border-radius: 0.6cqw;
+}
+
+/* ---------- Diapositiva 8: GRACIAS ---------- */
+.gracias-logo { position: absolute; left: 38.8%; top: 6.7%; width: 22%; }
+.gracias-logo img { width: 100%; }
+.gracias-tarjeta {
+  position: absolute;
+  left: 23.7%;
+  top: 27%;
+  width: 53.4%;
+  height: 54%;
+  background-color: var(--blanco);
+  border-radius: 1.2cqw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1cqw;
+}
+.gracias-titulo { font-size: 5cqw; font-weight: 800; color: var(--azul); }
+.gracias-nombre { font-size: 2.4cqw; font-weight: 700; color: var(--azul); }
+.gracias-cargo { font-size: 1.6cqw; color: var(--gris-texto); }
+.gracias-contacto { font-size: 1.6cqw; color: var(--azul); line-height: 1.7; }
+
+/* ---------- Pantalla (previsualización) e impresión ---------- */
+@media screen {
+  .hoja-pdf:not(.oculto) { display: block; max-width: 120rem; margin: 2rem auto; }
+  .hoja-pdf .diapo { box-shadow: var(--sombra); margin-bottom: 1.5rem; }
+}
+@media print {
+  /* Forzar la impresión de fondos, imágenes y colores en todos los elementos.
+     Sin esto, el navegador omite los fondos oscuros, las fotos de las
+     diapositivas y las bandas de color para "ahorrar tinta". */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body { background: var(--blanco); }
+  .cabecera, .contenido, .avisos, .modal { display: none !important; }
+  .hoja-pdf { display: block; }
+
+  /* Página con la misma proporción 16:9 de la diapositiva: sin bandas ni
+     deformación. 297mm de ancho × 167.06mm = 297 / (20/11.25). */
+  @page { size: 297mm 167mm; margin: 0; }
+
+  .diapo {
+    width: 297mm;
+    height: 167mm;
+    aspect-ratio: auto;
+    overflow: hidden;
+    /* Cada diapositiva en su propia página, sin cortarse a la mitad. */
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .diapo:last-child { page-break-after: auto; break-after: auto; }
+
+  /* Las imágenes de fondo deben cubrir toda la diapositiva al imprimir. */
+  .fondo-completo {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+}
+
