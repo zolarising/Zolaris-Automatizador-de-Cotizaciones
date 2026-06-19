@@ -1,19 +1,21 @@
 # ============================================================
-# Solo se versiona la aplicación (carpeta app/) y los archivos
-# del propio repositorio. TODO lo demás se ignora para no subir
-# datos privados de clientes ni archivos pesados a GitHub.
+# Solo se versiona la aplicación web. TODO lo demás se ignora
+# para no subir datos privados de clientes ni archivos pesados.
 # ============================================================
 
 # Ignorar todo por defecto...
 /*
+/*/
 
-# ...pero NO estos elementos del repositorio:
+# ...pero NO los archivos y carpetas de la aplicación:
 !.gitignore
 !README.md
-!app/
+!index.html
+!css/
+!js/
+!recursos/
 
-# Dentro de app/, ignorar archivos del sistema
-app/**/desktop.ini
+# Archivos del sistema
 **/desktop.ini
 **/.DS_Store
 **/Thumbs.db
