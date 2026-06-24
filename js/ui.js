@@ -239,7 +239,6 @@ const renderResultado = (resultado) => {
   const contenedor = document.getElementById('contenedorResultado');
   vaciar(contenedor);
 
-  const c = resultado.costos;
   const f = resultado.financiero;
 
   // Tarjeta: características del sistema
@@ -267,33 +266,12 @@ const renderResultado = (resultado) => {
   cuerpoFinanzas.appendChild(crearFila('Ahorro anual estimado', formatoMoneda(f.ahorroAnual)));
   cuerpoFinanzas.appendChild(crearFila('Beneficios tributarios', formatoMoneda(f.beneficioTributario)));
   cuerpoFinanzas.appendChild(crearFila('Retorno de la inversión', formatoNumero(f.payback) + ' años'));
-  cuerpoFinanzas.appendChild(crearFila('Total del proyecto', formatoMoneda(c.total), 'tabla__destacado'));
+  cuerpoFinanzas.appendChild(crearFila('Total del proyecto', formatoMoneda(resultado.costos.total), 'tabla__destacado'));
   tablaFinanzas.appendChild(cuerpoFinanzas);
   tarjetaFinanzas.appendChild(tablaFinanzas);
 
-  // Tarjeta ancha: desglose de costos
-  const tarjetaCostos = crear('div', { clase: 'tarjeta tarjeta--ancha' });
-  tarjetaCostos.appendChild(crear('h3', { clase: 'tarjeta__titulo', texto: 'Desglose del costo del proyecto' }));
-  const tablaCostos = crear('table', { clase: 'tabla' });
-  const cuerpoCostos = crear('tbody');
-  cuerpoCostos.appendChild(crearFila('Paneles solares', formatoMoneda(c.paneles)));
-  cuerpoCostos.appendChild(crearFila('Instalación eléctrica y estructura', formatoMoneda(c.electrica)));
-  cuerpoCostos.appendChild(crearFila('Inversor(es)', formatoMoneda(c.inversor)));
-  cuerpoCostos.appendChild(crearFila('Sistema de monitoreo', formatoMoneda(c.monitoreo)));
-  cuerpoCostos.appendChild(crearFila('Ingeniería y utilidad', formatoMoneda(c.ingenieria)));
-  cuerpoCostos.appendChild(crearFila('Mano de obra', formatoMoneda(c.manoObra)));
-  cuerpoCostos.appendChild(crearFila('Comisión', formatoMoneda(c.comision)));
-  cuerpoCostos.appendChild(crearFila('Subtotal', formatoMoneda(c.subtotal), 'tabla__destacado'));
-  if (c.descuento !== 0) {
-    cuerpoCostos.appendChild(crearFila('Descuento', formatoMoneda(c.descuento), 'tabla__rebaja'));
-  }
-  cuerpoCostos.appendChild(crearFila('Total del proyecto', formatoMoneda(c.total), 'tabla__destacado'));
-  tablaCostos.appendChild(cuerpoCostos);
-  tarjetaCostos.appendChild(tablaCostos);
-
   contenedor.appendChild(tarjetaSistema);
   contenedor.appendChild(tarjetaFinanzas);
-  contenedor.appendChild(tarjetaCostos);
 };
 
 /* ====================== Render del historial ====================== */

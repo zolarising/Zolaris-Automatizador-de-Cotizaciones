@@ -58,7 +58,7 @@ const irr = (flujos) => {
  * Busca en el catálogo de inversores la mayor potencia que no supere la potencia
  * calculada. Equivale a la función VLOOKUP(valor; tabla; col; VERDADERO) de Excel.
  * @param {number} potenciaKWp potencia instalada calculada.
- * @returns {{potencia:number, costoTotal:number, mppt:number}}
+ * @returns {{potencia:number, costoTotal:number, mppt:number, unidades:number}}
  */
 const buscarInversor = (potenciaKWp) => {
   let elegido = INVERSORES[0];
@@ -69,7 +69,73 @@ const buscarInversor = (potenciaKWp) => {
       break;
     }
   }
-  return { potencia: elegido[0], costoTotal: elegido[1], mppt: elegido[2] };
+  return { potencia: elegido[0], costoTotal: elegido[1], mppt: elegido[2], unidades: elegido[3] };
+};
+
+/**
+ * Costo base de la estructura de soporte (hoja Costos!D26 = SUM(D19:D24)).
+ * Escala con el número de paneles. El precio del soporte en L depende del tipo de techo.
+ * @param {number} numPaneles
+ * @param {string} tipoTecho  'Barro' u 'Otro'.
+ * @returns {number} costo base (antes del ×1.5 de MAIN).
+ */
+const calcularEstructura = (numPaneles, tipoTecho) => {
+  const C = CONSTANTES;
+  const end = Math.ceil(numPaneles / 10) * 4;                  // B19
+  const mid = (numPaneles - 1) * 2;                            // B20
+  const riel = Math.ceil(                                      // B21
+    (((numPaneles * C.ANCHO_PANEL_MM) + ((mid / 2) * C.DIM_MID_MM) + (end / 2))
+      / (C.LONGITUD_RIEL_M * 1000)) * 2
+  );
+  const grapaTierra = end / 2;                                 // B22
+  const unionRiel = mid / 2;                                   // B23
+  const soporteL = riel * 3;                                   // B24
+  const costoSoporteL = tipoTecho === 'Barro'
+    ? C.COSTO_SOPORTE_L_BARRO
+    : C.COSTO_SOPORTE_L_OTRO;                                  // C24
+  return (
+    C.COSTO_END * end                  // D19
+    + C.COSTO_MID * mid                // D20
+    + C.COSTO_RIEL * riel              // D21
+    + C.COSTO_GRAPA_TIERRA * grapaTierra // D22
+    + C.COSTO_UNION_RIEL * unionRiel   // D23
+    + costoSoporteL * soporteL         // D24
+  );
+};
+
+/**
+ * Costo base de la instalación eléctrica (hoja Costos!D40 = SUM(D29:D38)×1.5).
+ * Escala con el número de paneles (cable solar vía riel) y con el inversor
+ * (fusibles = MPPT×2, protección AC = nº de inversores).
+ * @param {number} numPaneles
+ * @param {string} tipoTecho
+ * @param {number} mppt       MPPT total del inversor elegido.
+ * @param {number} unidades   nº de inversores del modelo elegido.
+ * @returns {number} costo base (antes del ×1.5 de MAIN; ya incluye el ×1.5 interno).
+ */
+const calcularInstalacion = (numPaneles, tipoTecho, mppt, unidades) => {
+  const C = CONSTANTES;
+  // Riel (B21): mismo cálculo que en la estructura, necesario para el cable solar.
+  const end = Math.ceil(numPaneles / 10) * 4;
+  const mid = (numPaneles - 1) * 2;
+  const riel = Math.ceil(
+    (((numPaneles * C.ANCHO_PANEL_MM) + ((mid / 2) * C.DIM_MID_MM) + (end / 2))
+      / (C.LONGITUD_RIEL_M * 1000)) * 2
+  );
+  const fusibles = mppt * 2;                                   // B29
+  const metrosCableSolar = ((riel / 2) * C.LONGITUD_RIEL_M) + 24; // B35
+  const suma =
+    C.COSTO_FUSIBLE * fusibles            // D29
+    + C.COSTO_PORTAFUSIBLE * fusibles     // D30
+    + C.COSTO_TABLERO_DC                  // D31
+    + C.COSTO_TABLERO_AC                  // D32
+    + C.COSTO_PROTECCION_AC_INV * unidades // D33
+    + C.COSTO_PROTECCION_LLEGADA          // D34
+    + C.COSTO_CABLE_SOLAR * metrosCableSolar // D35
+    + C.COSTO_CABLE_AC * C.METROS_CABLE_AC // D36
+    + C.COSTO_TUBERIA                     // D37
+    + C.COSTO_OTROS_INSTALACION;          // D38
+  return suma * C.FACTOR_INSTALACION_INTERNO; // D40 = SUM(...)×1.5
 };
 
 /**
@@ -129,12 +195,19 @@ const calcularCotizacion = (entrada) => {
   const inversor = buscarInversor(potenciaKWp); // G8
 
   // --- Costos (hoja MAIN, columna I, acumulativos) ---
-  const costoPaneles = C.PRECIO_PANEL_COP * numPaneles * C.FACTOR_INSTALACION; // I6
-  const costoElectrica = C.COSTO_ESTRUCTURA_BASE * C.FACTOR_INSTALACION;       // I7
-  const costoInversor = inversor.costoTotal;                                   // I8 (costo/kW × kW)
-  const costoMonitoreo = C.COSTO_MONITOREO_BASE * C.FACTOR_INSTALACION;        // I9
+  // La estructura (D26) y la instalación eléctrica (D40) escalan con el número de
+  // paneles y el inversor; no son constantes (ver hoja Costos).
+  const estructuraBase = calcularEstructura(numPaneles, entrada.tipoTecho);             // Costos!D26
+  const instalacionBase = calcularInstalacion(
+    numPaneles, entrada.tipoTecho, inversor.mppt, inversor.unidades
+  );                                                                                     // Costos!D40
 
-  const baseComponentes = costoPaneles + costoElectrica + costoInversor + costoMonitoreo;
+  const costoPaneles = C.PRECIO_PANEL_COP * numPaneles * C.FACTOR_INSTALACION; // I6 = Costos!C11*G6*1.5
+  const costoEstructura = estructuraBase * C.FACTOR_INSTALACION;               // I7 = Costos!D26*1.5
+  const costoInversor = inversor.costoTotal;                                  // I8 (costo/kW × kW)
+  const costoInstalacion = instalacionBase * C.FACTOR_INSTALACION;            // I9 = Costos!D40*1.5
+
+  const baseComponentes = costoPaneles + costoEstructura + costoInversor + costoInstalacion;
   const ingenieria = baseComponentes * (C.PCT_INGENIERIA / 100);              // I10
   const manoObra = (baseComponentes + ingenieria) * (C.PCT_MANO_OBRA / 100);  // I11
   const comision = (baseComponentes + ingenieria + manoObra) * (C.PCT_COMISION / 100); // I12
@@ -229,9 +302,9 @@ const calcularCotizacion = (entrada) => {
     arbolesAnual,
     costos: {
       paneles: costoPaneles,
-      electrica: costoElectrica,
+      estructura: costoEstructura,
       inversor: costoInversor,
-      monitoreo: costoMonitoreo,
+      instalacion: costoInstalacion,
       ingenieria,
       manoObra,
       comision,
