@@ -244,13 +244,15 @@ const calcularCotizacion = (entrada) => {
   }
   const tirCompra = irr(flujoCompra); // fracción anual
 
-  // Leasing: TEA, plazo y pago inicial.
+  // Leasing: TEA, plazo y pago inicial (hoja COT PDF, sección Leasing C38:C42).
+  // El Excel usa la tasa NOMINAL mensual = TEA/12 (COT PDF F38 = C41/12), no la
+  // conversión compuesta, y la cuota es PMT vencida (COT PDF F41 = PMT(F38,F40,C38-C39)).
   const teaLeasing = parametros.teaLeasing / 100;
-  const tasaMensual = Math.pow(1 + teaLeasing, 1 / 12) - 1;
-  const mesesLeasing = Math.round(parametros.plazoLeasingAnios * 12);
-  const pagoInicial = totalProyecto * (parametros.pagoInicialLeasing / 100);
-  const montoFinanciado = totalProyecto - pagoInicial;
-  const cuotaMensualLeasing = pmt(tasaMensual, mesesLeasing, montoFinanciado);
+  const tasaMensual = teaLeasing / 12;                                // COT PDF F38 = C41/12
+  const mesesLeasing = Math.round(parametros.plazoLeasingAnios * 12); // COT PDF F40
+  const pagoInicial = totalProyecto * (parametros.pagoInicialLeasing / 100); // COT PDF C39
+  const montoFinanciado = totalProyecto - pagoInicial;               // COT PDF C38-C39
+  const cuotaMensualLeasing = pmt(tasaMensual, mesesLeasing, montoFinanciado); // COT PDF C42
   const cuotaAnualLeasing = cuotaMensualLeasing * 12;
 
   // Tabla de flujo del leasing a 25 años (en millones de COP, como en la cotización).

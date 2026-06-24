@@ -210,11 +210,15 @@ const leerFormulario = (formulario) => {
   }
 
   // Parámetros financieros avanzados (tienen valor por defecto en el HTML).
+  const pagoInicialLeasing = parseFloat(formulario.elements.pagoInicialLeasing.value);
+  const plazoLeasingAnios = parseFloat(formulario.elements.plazoLeasingAnios.value);
   const parametros = {
     tarifaVentaExcedentes: parseFloat(formulario.elements.tarifaVentaExcedentes.value),
     incrementoTarifa: parseFloat(formulario.elements.incrementoTarifa.value),
     inflacion: parseFloat(formulario.elements.inflacion.value),
-    degradacionAnual: parseFloat(formulario.elements.degradacionAnual.value)
+    degradacionAnual: parseFloat(formulario.elements.degradacionAnual.value),
+    pagoInicialLeasing: pagoInicialLeasing,
+    plazoLeasingAnios: plazoLeasingAnios
   };
   // Si alguno quedó vacío o inválido, se omite para usar el valor por defecto del cálculo.
   Object.keys(parametros).forEach((k) => {
@@ -222,6 +226,16 @@ const leerFormulario = (formulario) => {
       delete parametros[k];
     }
   });
+
+  // Validación específica del leasing (solo si el usuario los completó).
+  if (Number.isFinite(pagoInicialLeasing) && (pagoInicialLeasing < 0 || pagoInicialLeasing >= 100)) {
+    marcarError(formulario, 'pagoInicialLeasing', 'El pago inicial debe estar entre 0 y 99.');
+    valido = false;
+  }
+  if (Number.isFinite(plazoLeasingAnios) && plazoLeasingAnios <= 0) {
+    marcarError(formulario, 'plazoLeasingAnios', 'El tiempo de crédito debe ser mayor que cero.');
+    valido = false;
+  }
 
   if (!valido) {
     return null;

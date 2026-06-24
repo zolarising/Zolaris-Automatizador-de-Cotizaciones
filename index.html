@@ -134,6 +134,20 @@
               <input class="campo__entrada" id="campoDegradacion" name="degradacionAnual"
                      type="number" step="any" inputmode="decimal" value="0.4">
             </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoPagoInicial">Leasing · Pago inicial (%)</label>
+              <input class="campo__entrada" id="campoPagoInicial" name="pagoInicialLeasing"
+                     type="number" min="0" max="100" step="any" inputmode="decimal" value="60">
+              <span class="campo__ayuda">Porcentaje del costo total que se paga de entrada.</span>
+              <span class="campo__error" data-error-de="pagoInicialLeasing" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoPlazoLeasing">Leasing · Tiempo de crédito (años)</label>
+              <input class="campo__entrada" id="campoPlazoLeasing" name="plazoLeasingAnios"
+                     type="number" min="0.5" step="any" inputmode="decimal" value="2">
+              <span class="campo__ayuda">Plazo del crédito en años (ej. 2 años = 24 cuotas).</span>
+              <span class="campo__error" data-error-de="plazoLeasingAnios" role="alert"></span>
+            </div>
           </div>
         </details>
         </div>

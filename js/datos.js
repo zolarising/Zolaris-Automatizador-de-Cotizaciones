@@ -120,10 +120,10 @@ const PARAMETROS_DEFECTO = {
   inflacion: 4.3,               // % de inflación proyectada
   degradacionAnual: 0.4,        // % de degradación anual de los paneles
   aniosProyeccion: 25,          // horizonte de la proyección (tabla de flujo a 25 años)
-  // --- Leasing (hoja SIMULADOR CREDITO) ---
-  teaLeasing: 15,               // % Tasa Efectiva Anual del crédito leasing
-  plazoLeasingAnios: 2.5,       // años del crédito leasing
-  pagoInicialLeasing: 30        // % de pago inicial del leasing
+  // --- Leasing (hoja COT PDF, sección Leasing C38:C42) ---
+  teaLeasing: 18,               // % Tasa Efectiva Anual del crédito (COT PDF C41 = 0.18)
+  plazoLeasingAnios: 2,         // años del crédito (COT PDF F40 = 24 cuotas → 2 años)
+  pagoInicialLeasing: 60        // % de pago inicial (COT PDF C39 = C38 × 60%)
 };
 
 /**
