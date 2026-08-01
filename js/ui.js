@@ -342,72 +342,156 @@ const renderHistorial = (alAbrir, alEliminar) => {
 };
 
 /* ====================== Vista imprimible (PDF) ====================== */
-/* Réplica fiel de la plantilla "COTIZACIONES ZOLARIS.pptm": 8 diapositivas
-   16:9 con las imágenes y logos reales (carpeta app/recursos), colocados en las
-   mismas posiciones que el PowerPoint original. */
+/* Diseño Zolaris 2026: documento continuo (no diapositivas 16:9), con
+   cifra dominante por sección, gráficas SVG de marca construidas a partir
+   del resultado real de calcularCotizacion, y cierre con llamada a la
+   acción. Reemplaza la réplica del pptm original — mismo contrato de
+   datos (objeto `resultado`), mismo disparador (botón «Generar PDF» +
+   window.print()), mismo contenedor (#hojaPdf). */
 
 const REC = 'recursos/'; // carpeta de imágenes reales
+const NS_SVG = 'http://www.w3.org/2000/svg';
+
+/** Formatea un porcentaje con los decimales indicados (es-CO). */
+const formatoPorcentaje = (valor, decimales = 1) => formatoNumero(valor, decimales) + '%';
+
+/** Crea un elemento SVG con atributos. */
+const svgEl = (etiqueta, atributos = {}) => {
+  const el = document.createElementNS(NS_SVG, etiqueta);
+  Object.entries(atributos).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  return el;
+};
 
 /** Crea un <img> de recurso con clase. */
 const imgRec = (archivo, clase) =>
   crear('img', { clase: clase || '', atributos: { src: REC + archivo, alt: '' } });
 
-/** Crea una capa absoluta posicionada en % (left/top/width opcionales). */
-const capa = (clase, estilos) => {
-  const el = crear('div', { clase: 'capa' + (clase ? ' ' + clase : '') });
-  Object.entries(estilos || {}).forEach(([k, v]) => { el.style[k] = v; });
-  return el;
+/** Crea una sección de la hoja PDF, clara u oscura. */
+const pdfSeccion = (numero, eyebrow, titulo, oscura) => {
+  const sec = crear('section', { clase: 'pdf-section' + (oscura ? ' pdf-dark' : '') });
+  sec.appendChild(crear('div', { clase: 'pdf-section-eyebrow', texto: numero + ' · ' + eyebrow }));
+  sec.appendChild(crear('h2', { clase: 'pdf-section-title', texto: titulo }));
+  return sec;
 };
 
-/** Crea una diapositiva 16:9. */
-const crearDiapo = () => crear('div', { clase: 'diapo' });
-
-/** Logo común arriba-derecha (páginas 4-7). */
-const logoSuperior = () => {
-  const cont = crear('div', { clase: 'logo-sup' });
-  cont.appendChild(imgRec('logo-color.png'));
-  return cont;
-};
-
-/** Banda de título azul redondeada. */
-const tituloBanda = (texto) => crear('div', { clase: 'titulo-banda', texto: texto });
-
-/** Tabla concepto/valor con clase base y cabecera opcional. */
-const tablaCV = (claseTabla, claseCab, tituloCab, filas) => {
-  const tabla = crear('table', { clase: claseTabla });
+/** Crea una tabla concepto/valor de dos columnas con clase de marca. */
+const pdfTabla = (encabezados, filas, claseExtra) => {
+  const wrap = crear('div', { clase: 'pdf-table-wrap' });
+  const tabla = crear('table', { clase: 'pdf-tabla' + (claseExtra ? ' ' + claseExtra : '') });
+  const thead = crear('thead');
+  const trh = crear('tr');
+  encabezados.forEach((h) => trh.appendChild(crear('th', { texto: h })));
+  thead.appendChild(trh);
   const tbody = crear('tbody');
-  if (tituloCab) {
-    const trc = crear('tr', { clase: claseCab });
-    const td = crear('td', { texto: tituloCab });
-    td.setAttribute('colspan', '2');
-    trc.appendChild(td);
-    tbody.appendChild(trc);
-  }
-  filas.forEach((f) => tbody.appendChild(crearFila(f[0], f[1])));
-  tabla.appendChild(tbody);
-  return tabla;
-};
-
-/** Gráfico de barras (alturas en %) con clase y clase de barra por signo. */
-const barras = (clase, valores) => {
-  const cont = crear('div', { clase: clase });
-  const maximo = Math.max.apply(null, valores.map(Math.abs)) || 1;
-  valores.forEach((v) => {
-    const b = crear('div', { clase: v < 0 ? 'barra barra--neg' : 'barra' });
-    b.style.height = Math.max(2, Math.abs(v) / maximo * 100) + '%';
-    cont.appendChild(b);
+  filas.forEach((fila) => {
+    const tr = crear('tr', { clase: fila.total ? 'pdf-total-row' : '' });
+    fila.celdas.forEach((c, i) => {
+      const td = crear('td', { texto: c, clase: i > 0 ? 'pdf-num' + (fila.fuerte && i === fila.celdas.length - 1 ? ' pdf-strong' : '') : '' });
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
   });
-  return cont;
+  tabla.appendChild(thead);
+  tabla.appendChild(tbody);
+  wrap.appendChild(tabla);
+  return wrap;
 };
 
 /**
- * Rellena la hoja imprimible (#hojaPdf) con las 8 diapositivas, replicando la
- * plantilla oficial con sus imágenes reales.
+ * Gráfica de comparación "gasto acumulado" — sin Zolaris (creciendo con el
+ * incremento anual de tarifa) vs con Zolaris (inversión única, plana).
+ * @param {number} ahorroAnual valor del año 1 (proxy del gasto evitado).
+ * @param {number} costoTotal inversión total (compra directa).
+ * @param {number} incrementoPct % de incremento anual de tarifa (parámetro del formulario).
+ * @returns {{svg:SVGElement, anioCruce:number|null}}
+ */
+const graficoComparacion = (ahorroAnual, costoTotal, incrementoPct) => {
+  const w = 640;
+  const h = 220;
+  const incr = incrementoPct / 100;
+  const puntos = [[0, 0]];
+  let acum = 0;
+  for (let anio = 1; anio <= 10; anio += 1) {
+    acum += ahorroAnual * Math.pow(1 + incr, anio - 1);
+    puntos.push([anio, acum]);
+  }
+  const maxV = Math.max(puntos[puntos.length - 1][1], costoTotal) || 1;
+  const escalaX = (anio) => (anio / 10) * w;
+  const escalaY = (valor) => h - (valor / maxV) * h;
+
+  const svg = svgEl('svg', { viewBox: '0 0 ' + w + ' ' + h, width: '100%', height: 220 });
+  svg.appendChild(svgEl('line', {
+    x1: 0, y1: h, x2: w, y2: h, stroke: 'var(--pdf-line)', 'stroke-width': 1
+  }));
+  const lineaRoja = svgEl('polyline', {
+    points: puntos.map((p) => escalaX(p[0]) + ',' + escalaY(p[1])).join(' '),
+    fill: 'none', stroke: 'var(--pdf-bad)', 'stroke-width': 3,
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+  });
+  svg.appendChild(lineaRoja);
+  const yNaranja = escalaY(Math.min(costoTotal, maxV));
+  svg.appendChild(svgEl('line', {
+    x1: 0, y1: yNaranja, x2: w, y2: yNaranja, stroke: 'var(--pdf-orange)',
+    'stroke-width': 3, 'stroke-linecap': 'round'
+  }));
+
+  let anioCruce = null;
+  let acumCruce = 0;
+  for (let anio = 1; anio <= 10; anio += 1) {
+    const previo = acumCruce;
+    acumCruce += ahorroAnual * Math.pow(1 + incr, anio - 1);
+    if (acumCruce >= costoTotal && previo < costoTotal) {
+      const frac = (costoTotal - previo) / (acumCruce - previo);
+      anioCruce = (anio - 1) + frac;
+      break;
+    }
+  }
+  if (anioCruce !== null) {
+    svg.appendChild(svgEl('circle', {
+      cx: escalaX(anioCruce), cy: yNaranja, r: 5, fill: 'var(--pdf-orange)'
+    }));
+  }
+  return { svg, anioCruce };
+};
+
+/**
+ * Gráfica de área "flujo acumulado" del leasing, primeros 10 años.
+ * @param {Array} flujoLeasing salida de calcularCotizacion (financiero.flujoLeasing), en millones COP.
+ * @returns {SVGElement}
+ */
+const graficoFlujoLeasing = (flujoLeasing) => {
+  const w = 640;
+  const h = 220;
+  const primeros10 = flujoLeasing.slice(0, 10);
+  const maxV = Math.max.apply(null, primeros10.map((f) => f.acumulado)) || 1;
+  const puntos = [[0, 0]].concat(primeros10.map((f) => [f.anio, Math.max(0, f.acumulado)]));
+  const escalaX = (anio) => (anio / 10) * w;
+  const escalaY = (valor) => h - (valor / maxV) * h;
+  const coords = puntos.map((p) => escalaX(p[0]) + ',' + escalaY(p[1]));
+
+  const svg = svgEl('svg', { viewBox: '0 0 ' + w + ' ' + h, width: '100%', height: 220 });
+  const poligono = svgEl('polygon', {
+    points: coords.join(' ') + ' ' + w + ',' + h + ' 0,' + h,
+    fill: 'var(--pdf-orange)', opacity: 0.15
+  });
+  svg.appendChild(poligono);
+  svg.appendChild(svgEl('polyline', {
+    points: coords.join(' '), fill: 'none', stroke: 'var(--pdf-orange)',
+    'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+  }));
+  const ultimo = puntos[puntos.length - 1];
+  svg.appendChild(svgEl('circle', {
+    cx: escalaX(ultimo[0]), cy: escalaY(ultimo[1]), r: 5, fill: 'var(--pdf-navy)'
+  }));
+  return svg;
+};
+
+/**
+ * Rellena la hoja imprimible (#hojaPdf) con el diseño Zolaris 2026.
  * @param {Object} r resultado de calcularCotizacion.
  * @param {string} [codigo]
  * @param {string} [fechaISO]
- * @param {string} [imagen] imagen IA del proyecto (data URL); si falta, se usan
- *   las fotos por defecto de la plantilla.
+ * @param {string} [imagen] imagen del proyecto (data URL); si falta, se usa la foto por defecto.
  */
 const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   const hoja = document.getElementById('hojaPdf');
@@ -418,217 +502,359 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   const f = r.financiero;
   const p = r.parametros;
   const fecha = formatoFecha(fechaISO || new Date().toISOString());
-  const cli = e.nombre.toUpperCase();
-  const M = (cop) => '$' + formatoNumero(cop / 1e6, 1) + ' M';
+  const cli = e.nombre;
+  const M = (cop) => '$' + formatoNumero(cop / 1e6, 2) + 'M';
+  const M0 = (cop) => '$' + formatoNumero(cop / 1e6, 0) + 'M';
 
-  /* ---------- Diapositiva 1: PORTADA ---------- */
-  const d1 = crearDiapo();
-  // Fondo: imagen IA del cliente o foto por defecto.
-  if (imagen) {
-    d1.appendChild(crear('img', { clase: 'fondo-completo', atributos: { src: imagen, alt: '' } }));
-  } else {
-    d1.appendChild(imgRec('portada-default.jpg', 'fondo-completo'));
-  }
-  d1.appendChild(crear('div', { clase: 'velo' }));
-  const logoP = crear('div', { clase: 'portada-logo' });
-  logoP.appendChild(imgRec('logo-blanco.png'));
-  d1.appendChild(logoP);
-  d1.appendChild(crear('div', {
-    clase: 'portada-txt portada-titulo',
-    texto: 'ENERGÍA SOLAR INTELIGENTE PARA ' + cli
-  }));
-  d1.appendChild(crear('div', { clase: 'portada-txt portada-ahorro', texto: 'AHORRO REAL DESDE EL PRIMER DÍA' }));
-  d1.appendChild(crear('div', {
-    clase: 'portada-txt portada-datos',
-    texto: formatoNumero(r.potenciaKWp, 2) + ' kWp - ' + formatoNumero(r.numPaneles)
-      + ' PANELES - ' + formatoNumero(r.produccionMensual) + ' kWh/mes'
-  }));
-  const contactoP = crear('div', { clase: 'portada-contacto' });
-  contactoP.appendChild(crear('div', { texto: "Medellin, Antioquia" }));
-  contactoP.appendChild(crear('div', { texto: fecha }));
-  contactoP.appendChild(crear('div', { texto: EMPRESA.correo }));
-  contactoP.appendChild(crear('div', { texto: EMPRESA.telefono }));
-  d1.appendChild(contactoP);
-  hoja.appendChild(d1);
+  const pagina = crear('div', { clase: 'pdf-page' });
 
-  /* ---------- Diapositiva 2: GALERÍA DE PROYECTOS ---------- */
-  const d2 = crearDiapo();
-  const grid = crear('div', { clase: 'galeria-grid' });
-  for (let i = 1; i <= 9; i += 1) {
-    const celda = crear('div', { clase: 'galeria-celda' });
-    celda.appendChild(imgRec('gal' + i + '.jpg'));
-    celda.appendChild(crear('span', { clase: 'galeria-etq', texto: TEXTOS_PDF.galeria[i - 1] }));
-    grid.appendChild(celda);
-  }
-  d2.appendChild(grid);
-  hoja.appendChild(d2);
-
-  /* ---------- Diapositiva 3: MARKETING ---------- */
-  const d3 = crearDiapo();
-  d3.appendChild(imgRec('fondo3.jpg', 'fondo-completo'));
-  d3.appendChild(crear('div', { clase: 'velo' }));
-  d3.appendChild(crear('div', { clase: 'mkt-titulo', texto: TEXTOS_PDF.marketingTitulo }));
-  const mktLista = crear('ul', { clase: 'mkt-lista' });
-  TEXTOS_PDF.marketingPuntos.forEach((t) => mktLista.appendChild(crear('li', { texto: t })));
-  d3.appendChild(mktLista);
-  const alturas = [];
-  for (let i = 0; i < 12; i += 1) { alturas.push(15 + i * 7); }
-  d3.appendChild(barras('mkt-grafico', alturas));
-  hoja.appendChild(d3);
-
-  /* ---------- Diapositiva 4: TÉCNICA ---------- */
-  const d4 = crearDiapo();
-  d4.appendChild(logoSuperior());
-  d4.appendChild(crear('div', { clase: 'tec-proyecto', texto: 'PROYECTO ' + cli }));
-  d4.appendChild(crear('div', {
-    clase: 'tec-sub',
-    texto: 'Sistema Solar Fotovoltaico de ' + formatoNumero(r.potenciaKWp, 2)
-      + ' kWp · Cubre el ' + formatoNumero(e.porcentaje) + ' % de tu factura anual'
-  }));
-  // Imagen del proyecto (IA del cliente o foto por defecto).
-  if (imagen) {
-    d4.appendChild(crear('img', { clase: 'tec-imagen', atributos: { src: imagen, alt: '' } }));
-  } else {
-    d4.appendChild(imgRec('tecnica-default.jpg', 'tec-imagen'));
-  }
-  // Tabla "Información y proyecciones".
-  const tablaTec = tablaCV('tec-tabla', 'tec-tabla__cab', 'Información y proyecciones', [
-    ['Capacidad instalada [kWp]', formatoNumero(r.potenciaKWp, 1)],
-    ['Número de paneles', formatoNumero(r.numPaneles)],
-    ['Área del sistema [m2]', formatoNumero(r.areaSistema, 2)],
-    ['Producción mensual [kWh]', formatoNumero(r.produccionMensual)],
-    ['Producción mensual [COP]', formatoMoneda(f.ahorroMensual + f.ingresoMensual)]
-  ]);
-  d4.appendChild(tablaTec);
-  d4.appendChild(crear('div', { clase: 'tec-titulo-der', texto: 'Información y proyecciones' }));
-  // Iconos + valores en dos columnas. left/top en % de la diapositiva.
-  // Columna izquierda: icono 50.5%, valor 55.5%. Columna derecha: icono 74.5%, valor 79.5%.
-  const items = [
-    // [iconoArchivo, valor, leftIcono%, topIcono%, leftValor%, topValor%]
-    ['icono1.png', formatoNumero(r.produccionAnual) + ' kWh', 50.5, 30, 55.5, 31.5],
-    ['icono2.png', formatoNumero(f.paybackCompra) + ' años', 50.5, 44, 55.5, 45.5],
-    ['icono3.png', 'Excedentes $' + formatoNumero(p.tarifaVentaExcedentes) + '/kWh', 50.5, 58, 55.5, 59.5],
-    ['icono5.png', 'Tarifa actual $' + formatoNumero(e.precioKwh) + '/kWh', 50.5, 72, 55.5, 73.5],
-    ['icono5.png', 'Consumo ' + formatoNumero(e.consumo) + ' kWh/mes', 74.5, 30, 79.5, 31.5],
-    ['icono6.png', 'Ahorro anual ' + M(f.ahorroAnual), 74.5, 44, 79.5, 45.5],
-    ['icono7.png', 'Sustitución CO₂ ' + formatoNumero(r.co2Anual, 0) + ' kg', 74.5, 58, 79.5, 59.5],
-    ['icono8.png', formatoNumero(r.arbolesAnual, 0) + ' Árboles', 74.5, 72, 79.5, 73.5]
-  ];
-  items.forEach((it) => {
-    const ico = capa('tec-icono', { left: it[2] + '%', top: it[3] + '%' });
-    ico.appendChild(imgRec(it[0]));
-    d4.appendChild(ico);
-    const val = capa('tec-valor', { left: it[4] + '%', top: it[5] + '%' });
-    val.textContent = it[1];
-    d4.appendChild(val);
+  /* ---------- HERO ---------- */
+  const hero = crear('div', { clase: 'pdf-hero' });
+  hero.style.backgroundImage = 'url("' + (imagen || (REC + 'portada-default.jpg')) + '")';
+  const heroTop = crear('div', { clase: 'pdf-hero-top' });
+  heroTop.appendChild(imgRec('logo-blanco.png'));
+  const heroMeta = crear('div', { clase: 'pdf-hero-meta' });
+  ['Medellín, Antioquia', fecha, EMPRESA.correo, EMPRESA.telefono].forEach((linea) => {
+    heroMeta.appendChild(crear('div', { texto: linea }));
   });
-  hoja.appendChild(d4);
+  heroTop.appendChild(heroMeta);
+  hero.appendChild(heroTop);
 
-  /* ---------- Diapositiva 5: TECNOLOGÍA Y CONFIANZA ---------- */
-  const d5 = crearDiapo();
-  d5.appendChild(logoSuperior());
-  d5.appendChild(tituloBanda('TECNOLOGÍA Y CONFIANZA'));
-  d5.appendChild(crear('div', {
-    clase: 'tecno-sub',
-    texto: 'Sistema Solar Fotovoltaico de ' + formatoNumero(r.potenciaKWp, 2) + ' kWp'
+  const heroBody = crear('div', { clase: 'pdf-hero-body' });
+  heroBody.appendChild(crear('span', { clase: 'pdf-eyebrow', texto: 'Propuesta comercial · Energía solar inteligente' }));
+  heroBody.appendChild(crear('h1', { clase: 'pdf-hero-title', texto: 'Energía Solar Inteligente para ' + cli }));
+  const headline = crear('div', { clase: 'pdf-hero-headline' });
+  headline.appendChild(crear('div', { clase: 'num', texto: M(f.ahorroAnual) }));
+  headline.appendChild(crear('div', { clase: 'lbl', texto: 'de ahorro proyectado cada año — desde el primer día de operación.' }));
+  heroBody.appendChild(headline);
+  const heroChips = crear('div', { clase: 'pdf-hero-chips' });
+  [
+    [formatoNumero(r.potenciaKWp, 1) + ' kWp', 'Potencia instalada'],
+    [formatoNumero(r.numPaneles), 'Paneles'],
+    [formatoNumero(f.paybackCompra) + ' años', 'Retorno estimado']
+  ].forEach(([valor, etq]) => {
+    const chip = crear('div', { clase: 'pdf-chip' });
+    chip.appendChild(crear('b', { texto: valor }));
+    chip.appendChild(crear('span', { texto: etq }));
+    heroChips.appendChild(chip);
+  });
+  heroBody.appendChild(heroChips);
+  hero.appendChild(heroBody);
+  pagina.appendChild(hero);
+
+  const contenido = crear('div', { clase: 'pdf-content' });
+
+  /* ---------- 01 · Composición de la factura (ilustrativo) ---------- */
+  const s1 = pdfSeccion('01', 'Antes de hablar de ahorro', '¿De qué está hecha tu factura hoy?', false);
+  s1.appendChild(crear('p', {
+    clase: 'pdf-lead',
+    texto: 'La tarifa regulada de energía en Colombia se construye con varios cargos — no todos desaparecen con paneles solares, pero el más grande sí.'
   }));
-  const filasTecno = COMPONENTES_TECNOLOGIA.map((comp) => {
+  const compCard = crear('div', { clase: 'pdf-card' });
+  compCard.appendChild(crear('div', { clase: 'pdf-card-n', texto: 'ESTRUCTURA APROXIMADA DE LA TARIFA (COMPONENTES CREG)' }));
+  const compGrid = crear('div', { clase: 'pdf-grid3' });
+  [
+    ['Generación — 42%', 'Es lo que tu sistema solar reemplaza.'],
+    ['Distribución — 27%', 'Cargo por transporte en la red local.'],
+    ['Comercialización, pérdidas, transmisión y otros — 31%', 'Se mantienen aunque generes tu propia energía.']
+  ].forEach(([t, d]) => {
+    const card = crear('div', { clase: 'pdf-card' });
+    card.appendChild(crear('h4', { texto: t }));
+    card.appendChild(crear('p', { texto: d }));
+    compGrid.appendChild(card);
+  });
+  s1.appendChild(compGrid);
+  contenido.appendChild(s1);
+
+  /* ---------- 02 · El impacto en tu factura ---------- */
+  const s2 = pdfSeccion('02', 'El impacto en tu factura', 'La diferencia se ve en pocos años, no en 25', false);
+  s2.appendChild(crear('p', {
+    clase: 'pdf-lead',
+    texto: 'Cada año que pasa sin energía solar, tu factura sube. Con Zolaris, pagas una vez y el gasto se detiene — la comparación acumulada lo dice todo.'
+  }));
+  const chartCard1 = crear('div', { clase: 'pdf-card' });
+  chartCard1.appendChild(crear('div', { clase: 'pdf-card-n', texto: 'GASTO ACUMULADO EN ENERGÍA — 10 AÑOS' }));
+  const { svg: svgComp, anioCruce } = graficoComparacion(f.ahorroAnual, c.total, p.incrementoTarifa);
+  chartCard1.appendChild(svgComp);
+  const legend1 = crear('div', { clase: 'pdf-support-chips' });
+  const sc1 = crear('div', { clase: 'sc' });
+  sc1.appendChild(crear('b', { texto: 'Sin Zolaris', atributos: {} }));
+  sc1.querySelector('b').style.color = 'var(--pdf-bad)';
+  sc1.appendChild(crear('span', { texto: 'Factura creciendo ' + formatoPorcentaje(p.incrementoTarifa) + '/año' }));
+  const sc2 = crear('div', { clase: 'sc' });
+  const bCon = crear('b', { texto: 'Con Zolaris' });
+  bCon.style.color = 'var(--pdf-orange)';
+  sc2.appendChild(bCon);
+  sc2.appendChild(crear('span', {
+    texto: anioCruce !== null
+      ? 'Punto de equilibrio ≈ año ' + formatoNumero(anioCruce, 1)
+      : 'Inversión única, sin factura después'
+  }));
+  legend1.appendChild(sc1);
+  legend1.appendChild(sc2);
+  chartCard1.appendChild(legend1);
+  s2.appendChild(chartCard1);
+  contenido.appendChild(s2);
+
+  /* ---------- 03 · Antes y después (mockup de factura) ---------- */
+  const s3 = pdfSeccion('03', 'Antes y después', 'La misma factura que conoces — con un número distinto', false);
+  s3.appendChild(crear('p', {
+    clase: 'pdf-lead',
+    texto: 'Simulación ilustrativa de tu recibo de energía, con y sin sistema solar, usando tus propios datos de consumo.'
+  }));
+  const compare = crear('div', { clase: 'pdf-compare2' });
+  const antes = crear('div', { clase: 'pdf-paycard' });
+  antes.appendChild(crear('h3', { texto: 'Factura de energía · Antes' }));
+  [['Consumo del período', formatoNumero(e.consumo) + ' kWh'], ['Tarifa', '$' + formatoNumero(e.precioKwh) + '/kWh']]
+    .forEach(([k, v]) => {
+      const row = crear('div', { clase: 'row' });
+      row.appendChild(crear('span', { texto: k }));
+      row.appendChild(crear('b', { texto: v }));
+      antes.appendChild(row);
+    });
+  const rowTotalAntes = crear('div', { clase: 'row hi-row' });
+  rowTotalAntes.appendChild(crear('span', { texto: 'Valor a pagar' }));
+  const bTotalAntes = crear('b', { texto: formatoMoneda(f.ahorroMensual + f.ingresoMensual) });
+  bTotalAntes.style.color = 'var(--pdf-bad)';
+  rowTotalAntes.appendChild(bTotalAntes);
+  antes.appendChild(rowTotalAntes);
+
+  const despues = crear('div', { clase: 'pdf-paycard hi' });
+  despues.appendChild(crear('h3', { texto: 'Factura de energía · Con Zolaris' }));
+  [['Consumo del período', formatoNumero(e.consumo) + ' kWh'], ['Cubierto por tu sistema solar', formatoPorcentaje(e.porcentaje, 0)]]
+    .forEach(([k, v]) => {
+      const row = crear('div', { clase: 'row' });
+      row.appendChild(crear('span', { texto: k }));
+      row.appendChild(crear('b', { texto: v }));
+      despues.appendChild(row);
+    });
+  const rowTotalDespues = crear('div', { clase: 'row hi-row' });
+  rowTotalDespues.appendChild(crear('span', { texto: 'Valor a pagar' }));
+  rowTotalDespues.appendChild(crear('b', { texto: '$0' }));
+  despues.appendChild(rowTotalDespues);
+
+  compare.appendChild(antes);
+  compare.appendChild(despues);
+  s3.appendChild(compare);
+  s3.appendChild(crear('p', {
+    clase: 'pdf-lead',
+    texto: 'Simulación ilustrativa — el valor real puede variar según excedentes y cargos fijos del operador de red.',
+    atributos: { style: 'text-align:center; margin-top:1.6rem; font-size:1.25rem;' }
+  }));
+  contenido.appendChild(s3);
+
+  /* ---------- 04 · Tu sistema en números ---------- */
+  const s4 = pdfSeccion('04', 'Tu sistema, en números', 'Dimensionado exactamente para tu consumo', false);
+  const gridSistema = crear('div', { clase: 'pdf-grid3' });
+  [
+    [formatoNumero(r.potenciaKWp, 1) + ' kWp', 'Potencia instalada'],
+    [formatoNumero(r.numPaneles), 'Paneles ZN Shine 730 Wp'],
+    [formatoNumero(r.areaSistema, 1) + ' m²', 'Área del sistema']
+  ].forEach(([v, l]) => {
+    const card = crear('div', { clase: 'pdf-card' });
+    card.appendChild(crear('div', { clase: 'pdf-card-n', texto: '☀' }));
+    card.appendChild(crear('h4', { texto: v }));
+    card.appendChild(crear('p', { texto: l }));
+    gridSistema.appendChild(card);
+  });
+  s4.appendChild(gridSistema);
+  contenido.appendChild(s4);
+
+  /* ---------- 05 · Cuánto ahorras ---------- */
+  const s5 = pdfSeccion('05', 'Cuánto ahorras', 'Una cifra que lo resume todo', true);
+  const headlineAhorro = crear('div', { clase: 'pdf-headline-number' });
+  const numAhorro = crear('div', { clase: 'num' });
+  numAhorro.appendChild(document.createTextNode(M(f.ahorroAnual).replace('M', '')));
+  numAhorro.appendChild(crear('span', { clase: 'unit', texto: 'M / año' }));
+  headlineAhorro.appendChild(numAhorro);
+  headlineAhorro.appendChild(crear('div', {
+    clase: 'desc',
+    texto: 'Ahorro proyectado, cubriendo el ' + formatoPorcentaje(e.porcentaje, 0) + ' de tu factura anual desde el primer año de operación.'
+  }));
+  s5.appendChild(headlineAhorro);
+  const chipsAhorro = crear('div', { clase: 'pdf-support-chips' });
+  [
+    [formatoNumero(f.paybackCompra) + ' años', 'Retorno de inversión'],
+    [formatoPorcentaje(f.tirCompra * 100, 1), 'Tasa interna de retorno'],
+    [M0(f.beneficioTributario), 'Beneficios tributarios'],
+    [formatoNumero(r.co2Anual, 0) + ' kg', 'CO₂ evitado/año']
+  ].forEach(([v, l]) => {
+    const sc = crear('div', { clase: 'sc' });
+    sc.appendChild(crear('b', { texto: v }));
+    sc.appendChild(crear('span', { texto: l }));
+    chipsAhorro.appendChild(sc);
+  });
+  s5.appendChild(chipsAhorro);
+  contenido.appendChild(s5);
+
+  /* ---------- 06 · Tecnología ---------- */
+  const s6 = pdfSeccion('06', 'Tecnología que puedes confiar', 'Equipos premium, garantías reales', false);
+  const filasTec = COMPONENTES_BASE.map((comp) => {
     let cant = '1';
     if (comp.clave === 'paneles') { cant = formatoNumero(r.numPaneles); }
-    const desc = comp.clave === 'inversor'
-      ? 'Inversor de ' + formatoNumero(r.inversor.potencia, 1) + ' kW'
-      : comp.descripcion;
-    return [desc, cant];
+    return { celdas: [comp.descripcion, cant] };
   });
-  d5.appendChild(tablaCV('tecno-tabla', 'tecno-tabla__cab', 'Descripción / Unidades', filasTecno));
-  // Fotos del panel y del inversor (arriba-derecha, como en el original).
-  const panelImg = capa('tecno-equipo tecno-equipo--panel', {});
-  panelImg.appendChild(imgRec('panel.png'));
-  d5.appendChild(panelImg);
-  const invImg = capa('tecno-equipo tecno-equipo--inversor', {});
-  invImg.appendChild(imgRec('inversor.png'));
-  d5.appendChild(invImg);
-  // Logos de marcas (debajo de las fotos de equipos).
-  const marcas = crear('div', { clase: 'tecno-marcas' });
-  for (let i = 1; i <= 6; i += 1) { marcas.appendChild(imgRec('marca' + i + '.png')); }
-  d5.appendChild(marcas);
-  const garT = crear('div', { clase: 'tecno-garantias' });
-  TEXTOS_PDF.garantiasTecnologia.forEach((g) => garT.appendChild(crear('div', { texto: g })));
-  d5.appendChild(garT);
-  hoja.appendChild(d5);
+  s6.appendChild(pdfTabla(['Descripción', 'Unidades'], filasTec));
+  const marcasRow = crear('div', { clase: 'pdf-brand-row' });
+  for (let i = 1; i <= 6; i += 1) { marcasRow.appendChild(imgRec('marca' + i + '.png')); }
+  s6.appendChild(marcasRow);
+  contenido.appendChild(s6);
 
-  /* ---------- Diapositiva 6: MODELOS DE NEGOCIO ---------- */
-  const d6 = crearDiapo();
-  d6.appendChild(logoSuperior());
-  d6.appendChild(tituloBanda('Modelos de negocio'));
-  d6.appendChild(tablaCV('neg-tabla neg-tabla--compra', 'neg-tabla__cab', 'Compra directa', [
-    ['Costo total del Proyecto', formatoMoneda(c.total)],
-    ['Tasa interna de Retorno', formatoNumero(f.tirCompra * 100, 1) + '%'],
-    ['Retorno a la inversión [Años]', formatoNumero(f.paybackCompra)],
-    ['Beneficios Tributarios', formatoMoneda(f.beneficioTributario)]
-  ]));
-  d6.appendChild(tablaCV('neg-tabla neg-tabla--leasing', 'neg-tabla__cab', 'Leasing', [
-    ['Costo total del Proyecto', formatoMoneda(c.total)],
-    ['Pago Inicial', formatoMoneda(f.pagoInicial)],
-    ['Tiempo crédito (Años)', formatoNumero(p.plazoLeasingAnios, 1)],
-    ['Tasa de crédito', formatoNumero(p.teaLeasing, 1) + '%'],
-    ['Cuota fija mensual', formatoMoneda(f.cuotaMensualLeasing)]
-  ]));
-  // Gráficos de flujo acumulado.
-  let accCompra = -c.total / 1e6;
-  const fCompra = f.flujoLeasing.map((x) => { accCompra += x.ahorro; return accCompra; });
-  d6.appendChild(barras('neg-grafico neg-grafico--compra', fCompra));
-  d6.appendChild(barras('neg-grafico neg-grafico--leasing', f.flujoLeasing.map((x) => x.acumulado)));
-  d6.appendChild(crear('div', { clase: 'neg-pie neg-pie--compra', texto: 'Invierte una vez, y a partir del año 3, todo es ganancia.' }));
-  d6.appendChild(crear('div', { clase: 'neg-pie neg-pie--leasing', texto: 'El sol trabaja para ti, incluso mientras pagas tu cuota.' }));
-  hoja.appendChild(d6);
-
-  /* ---------- Diapositiva 7: LO QUE INCLUYE ---------- */
-  const d7 = crearDiapo();
-  d7.appendChild(logoSuperior());
-  d7.appendChild(tituloBanda('Lo que incluye tu sistema solar'));
-  // Cuatro bloques en posiciones del pptm.
-  const posBloques = [
-    { left: '10.3%', top: '16%', width: '38%' },   // Seguridad
-    { left: '57.1%', top: '16%', width: '30%' },   // Beneficios
-    { left: '57.1%', top: '47%', width: '35%' },   // Instalación
-    { left: '10.3%', top: '47%', width: '40%' }    // Forma de pago
-  ];
-  TEXTOS_PDF.incluye.forEach((bloque, i) => {
-    const b = capa('inc-bloque', posBloques[i]);
-    b.appendChild(crear('h4', { texto: bloque.titulo }));
-    const ul = crear('ul');
-    bloque.puntos.forEach((pt) => ul.appendChild(crear('li', { texto: pt })));
-    b.appendChild(ul);
-    d7.appendChild(b);
+  /* ---------- 07 · Cómo lo pagas ---------- */
+  const s7 = pdfSeccion('07', 'Cómo lo pagas', 'Compra directa o leasing — tú eliges', false);
+  const pagoGrid = crear('div', { clase: 'pdf-compare2' });
+  const compraCard = crear('div', { clase: 'pdf-paycard' });
+  compraCard.appendChild(crear('h3', { texto: 'Compra directa' }));
+  [
+    ['Costo total', formatoMoneda(c.total)],
+    ['TIR', formatoPorcentaje(f.tirCompra * 100, 1)]
+  ].forEach(([k, v]) => {
+    const row = crear('div', { clase: 'row' });
+    row.appendChild(crear('span', { texto: k }));
+    row.appendChild(crear('b', { texto: v }));
+    compraCard.appendChild(row);
   });
-  // Bloque forma de pago (4º).
-  const pago = capa('inc-bloque', posBloques[3]);
-  pago.appendChild(crear('h4', { texto: 'Forma de pago' }));
-  EMPRESA.formaPago.forEach((linea) => pago.appendChild(crear('div', { texto: linea })));
-  pago.appendChild(crear('div', { texto: ' ' }));
-  pago.appendChild(crear('div', { texto: EMPRESA.cuentaBanco }));
-  pago.appendChild(crear('div', { texto: EMPRESA.cuentaTipo + ' ' + EMPRESA.cuentaNumero }));
-  d7.appendChild(pago);
-  d7.appendChild(crear('div', { clase: 'inc-entrega', texto: 'Tiempo de entrega: ' + EMPRESA.tiempoEntrega }));
-  hoja.appendChild(d7);
+  const rowRetorno = crear('div', { clase: 'row hi-row' });
+  rowRetorno.appendChild(crear('span', { texto: 'Retorno' }));
+  rowRetorno.appendChild(crear('b', { texto: formatoNumero(f.paybackCompra) + ' años' }));
+  compraCard.appendChild(rowRetorno);
 
-  /* ---------- Diapositiva 8: GRACIAS ---------- */
-  const d8 = crearDiapo();
-  d8.appendChild(imgRec('fondo8.jpg', 'fondo-completo'));
-  d8.appendChild(crear('div', { clase: 'velo' }));
-  const logoG = crear('div', { clase: 'gracias-logo' });
-  logoG.appendChild(imgRec('logo-blanco.png'));
-  d8.appendChild(logoG);
-  const tarj = crear('div', { clase: 'gracias-tarjeta' });
-  tarj.appendChild(crear('div', { clase: 'gracias-titulo', texto: 'Gracias' }));
-  tarj.appendChild(crear('div', { clase: 'gracias-nombre', texto: EMPRESA.gerente }));
-  tarj.appendChild(crear('div', { clase: 'gracias-cargo', texto: EMPRESA.cargoGerente }));
-  const contG = crear('div', { clase: 'gracias-contacto' });
-  contG.appendChild(crear('div', { texto: EMPRESA.telefono }));
-  contG.appendChild(crear('div', { texto: EMPRESA.instagram }));
-  tarj.appendChild(contG);
-  d8.appendChild(tarj);
-  hoja.appendChild(d8);
+  const leasingCard = crear('div', { clase: 'pdf-paycard hi' });
+  leasingCard.appendChild(crear('h3', { texto: 'Leasing Zolaris' }));
+  [
+    ['Pago inicial', formatoMoneda(f.pagoInicial)],
+    ['Plazo', formatoNumero(p.plazoLeasingAnios, 1) + ' años']
+  ].forEach(([k, v]) => {
+    const row = crear('div', { clase: 'row' });
+    row.appendChild(crear('span', { texto: k }));
+    row.appendChild(crear('b', { texto: v }));
+    leasingCard.appendChild(row);
+  });
+  const rowCuota = crear('div', { clase: 'row hi-row' });
+  rowCuota.appendChild(crear('span', { texto: 'Cuota mensual' }));
+  rowCuota.appendChild(crear('b', { texto: formatoMoneda(f.cuotaMensualLeasing) }));
+  leasingCard.appendChild(rowCuota);
+
+  pagoGrid.appendChild(compraCard);
+  pagoGrid.appendChild(leasingCard);
+  s7.appendChild(pagoGrid);
+  contenido.appendChild(s7);
+
+  /* ---------- 08 · Leasing en el tiempo ---------- */
+  const s8 = pdfSeccion('08', 'Leasing en el tiempo', 'El sol trabaja para ti, incluso mientras pagas tu cuota', false);
+  const chartCard2 = crear('div', { clase: 'pdf-card' });
+  chartCard2.appendChild(crear('div', { clase: 'pdf-card-n', texto: 'FLUJO ACUMULADO — PRIMEROS 10 AÑOS' }));
+  chartCard2.appendChild(graficoFlujoLeasing(f.flujoLeasing));
+  s8.appendChild(chartCard2);
+  const filasLeasing = f.flujoLeasing.map((fl) => ({
+    celdas: [
+      String(fl.anio),
+      fl.cuota === 0 ? '$0' : '-' + M(Math.abs(fl.cuota) * 1e6),
+      M(fl.ahorro * 1e6),
+      M(fl.flujoNeto * 1e6)
+    ]
+  }));
+  s8.appendChild(pdfTabla(['Año', 'Cuota', 'Ahorro en energía', 'Flujo neto'], filasLeasing));
+  contenido.appendChild(s8);
+
+  /* ---------- 09 · Lo que incluye ---------- */
+  const s9 = pdfSeccion('09', 'Lo que incluye tu sistema solar', 'Seguridad, respaldo y cumplimiento normativo', false);
+  const incluyeGrid = crear('div', { clase: 'pdf-grid3' });
+  TEXTOS_PDF.incluye.forEach((bloque) => {
+    const card = crear('div', { clase: 'pdf-card' });
+    card.appendChild(crear('h4', { texto: bloque.titulo }));
+    const ul = crear('ul', { atributos: { style: 'margin:0.6rem 0 0; padding-left:1.6rem;' } });
+    bloque.puntos.forEach((pt) => ul.appendChild(crear('li', { texto: pt, atributos: { style: 'font-size:1.3rem; color:var(--pdf-gray); margin-bottom:0.4rem;' } })));
+    card.appendChild(ul);
+    incluyeGrid.appendChild(card);
+  });
+  s9.appendChild(incluyeGrid);
+  const pagoBox = crear('div', { clase: 'pdf-box' });
+  pagoBox.appendChild(crear('h4', { texto: 'Forma de pago', atributos: { style: 'color:var(--pdf-navy); font-size:1.4rem; margin-bottom:0.8rem;' } }));
+  EMPRESA.formaPago.forEach((linea) => pagoBox.appendChild(crear('p', { texto: linea, atributos: { style: 'margin:0 0 0.4rem; text-align:left; font-size:1.3rem;' } })));
+  pagoBox.appendChild(crear('p', {
+    texto: 'Tiempo de entrega: ' + EMPRESA.tiempoEntrega,
+    atributos: { style: 'margin-top:0.8rem; text-align:left; font-size:1.3rem; color:var(--pdf-gray);' }
+  }));
+  s9.appendChild(pagoBox);
+  contenido.appendChild(s9);
+
+  /* ---------- 10 · Por qué decidir ahora ---------- */
+  const s10 = pdfSeccion('10', 'Por qué decidir ahora', 'Cada mes de espera tiene un precio', true);
+  s10.appendChild(crear('p', {
+    clase: 'pdf-lead',
+    texto: 'No es una cifra hipotética — es tu propio ahorro anual, dividido en el tiempo que tardes en decidir.'
+  }));
+  const ahorroMes = f.ahorroAnual / 12;
+  const headlineMes = crear('div', { clase: 'pdf-headline-number' });
+  const numMes = crear('div', { clase: 'num' });
+  numMes.appendChild(document.createTextNode(M(ahorroMes).replace('M', '')));
+  numMes.appendChild(crear('span', { clase: 'unit', texto: 'M / mes' }));
+  headlineMes.appendChild(numMes);
+  headlineMes.appendChild(crear('div', {
+    clase: 'desc',
+    texto: 'Es lo que dejas de ahorrar por cada mes que la instalación no ha comenzado.'
+  }));
+  s10.appendChild(headlineMes);
+  const chipsEspera = crear('div', { clase: 'pdf-support-chips' });
+  [3, 6, 12].forEach((meses) => {
+    const sc = crear('div', { clase: 'sc' });
+    const b = crear('b', { texto: M0(ahorroMes * meses) });
+    if (meses === 12) { b.style.color = 'var(--pdf-orange)'; }
+    sc.appendChild(b);
+    sc.appendChild(crear('span', { texto: 'Perdidos en ' + meses + ' meses de espera' }));
+    chipsEspera.appendChild(sc);
+  });
+  s10.appendChild(chipsEspera);
+  contenido.appendChild(s10);
+
+  /* ---------- 11 · Respaldo real ---------- */
+  const s11 = pdfSeccion('11', 'Respaldo real', 'Más de 45 proyectos ya instalados', false);
+  const portfolioGrid = crear('div', { clase: 'pdf-portfolio-grid' });
+  for (let i = 1; i <= 6; i += 1) {
+    const card = crear('div', { clase: 'pcard' });
+    card.appendChild(imgRec('gal' + i + '.jpg'));
+    card.appendChild(crear('div', { clase: 'lbl', texto: TEXTOS_PDF.galeria[i - 1] }));
+    portfolioGrid.appendChild(card);
+  }
+  s11.appendChild(portfolioGrid);
+  contenido.appendChild(s11);
+
+  /* ---------- Cierre ---------- */
+  const sCierre = crear('section', { clase: 'pdf-section' });
+  const cta = crear('div', { clase: 'pdf-cta-box' });
+  cta.appendChild(crear('h2', { texto: '¿Avanzamos con tu proyecto, ' + cli + '?' }));
+  cta.appendChild(crear('p', { texto: 'Esta propuesta tiene una vigencia de 30 días calendario a partir de su fecha de emisión.' }));
+  const pasos = crear('div', { clase: 'pdf-cta-steps' });
+  [
+    ['PASO 1', 'Confirmas la modalidad (compra o leasing)'],
+    ['PASO 2', 'Firmas y realizas el anticipo'],
+    ['PASO 3', 'Instalamos en ' + EMPRESA.tiempoEntrega.split('.')[0]]
+  ].forEach(([n, t]) => {
+    const st = crear('div', { clase: 'st' });
+    st.appendChild(crear('div', { clase: 'n', texto: n }));
+    st.appendChild(crear('div', { clase: 't', texto: t }));
+    pasos.appendChild(st);
+  });
+  cta.appendChild(pasos);
+  const firmas = crear('div', { clase: 'pdf-sign-grid' });
+  const firmaCliente = crear('div', { clase: 'pdf-sign-line' });
+  firmaCliente.appendChild(crear('strong', { texto: cli }));
+  firmaCliente.appendChild(document.createTextNode('Cliente'));
+  const firmaZolaris = crear('div', { clase: 'pdf-sign-line' });
+  firmaZolaris.appendChild(crear('strong', { texto: EMPRESA.gerente }));
+  firmaZolaris.appendChild(document.createTextNode(EMPRESA.cargoGerente + ' · Zolaris S.A.S.'));
+  firmas.appendChild(firmaCliente);
+  firmas.appendChild(firmaZolaris);
+  cta.appendChild(firmas);
+  sCierre.appendChild(cta);
+  contenido.appendChild(sCierre);
+
+  pagina.appendChild(contenido);
+
+  const footer = crear('div', { clase: 'pdf-footer' });
+  footer.appendChild(crear('div', { texto: EMPRESA.razonSocial + ' · ' + EMPRESA.correo + ' · ' + EMPRESA.telefono }));
+  pagina.appendChild(footer);
+
+  hoja.appendChild(pagina);
 };
-
