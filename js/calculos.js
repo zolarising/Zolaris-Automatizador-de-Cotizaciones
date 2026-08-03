@@ -151,6 +151,38 @@ const obtenerGeneracion = (ciudad) => {
 };
 
 /**
+ * Obtiene el perfil mensual relativo (12 índices, promedio anual = 1.0) de una ciudad.
+ * Usa el perfil propio (NASA POWER) si existe; si no, el genérico nacional.
+ * @param {string} ciudad
+ * @returns {number[]}
+ */
+const obtenerPerfilMensual = (ciudad) => {
+  if (Object.prototype.hasOwnProperty.call(PERFIL_MENSUAL_CIUDAD, ciudad)) {
+    return PERFIL_MENSUAL_CIUDAD[ciudad];
+  }
+  return PERFIL_MENSUAL_GENERICO;
+};
+
+/**
+ * Calcula la producción de cada mes del año a partir de la producción anual y el
+ * perfil estacional de la ciudad — la generación solar en Colombia no es igual
+ * todos los meses (varía con las temporadas de lluvia).
+ * @param {number} produccionAnual kWh/año.
+ * @param {string} ciudad
+ * @returns {Array<{mes:string, produccion:number, indice:number}>}
+ */
+const calcularProduccionMensual = (produccionAnual, ciudad) => {
+  const perfil = obtenerPerfilMensual(ciudad);
+  const esPerfilPropio = Object.prototype.hasOwnProperty.call(PERFIL_MENSUAL_CIUDAD, ciudad);
+  return NOMBRES_MESES.map((mes, i) => ({
+    mes,
+    produccion: (produccionAnual / 12) * perfil[i],
+    indice: perfil[i],
+    esPerfilPropio
+  }));
+};
+
+/**
  * Redondea a un número fijo de decimales (equivalente a ROUND de Excel).
  * @param {number} valor
  * @param {number} decimales
@@ -230,6 +262,7 @@ const calcularCotizacion = (entrada) => {
   const ahorroAnual = (ahorroMensual + ingresoMensual) * 12; // F8
   const co2Anual = produccionAnual * C.FACTOR_CO2;        // MAIN C15 = 0.53 × producción
   const arbolesAnual = co2Anual / C.FACTOR_ARBOLES_DIV;   // MAIN C16 = CO2 / 27
+  const kmEvitadosAnual = co2Anual / C.FACTOR_KM_POR_KG_CO2; // equivalente en km de auto evitados
   const consumoMensualSuplido = (produccionAnual / 12); // [kWh/mes] que cubre el sistema
 
   // --- Simulador financiero (hoja SIMULADOR CREDITO) ---
@@ -287,6 +320,8 @@ const calcularCotizacion = (entrada) => {
     if (acumCompra >= 0) { paybackCompra = i; break; }
   }
 
+  const produccionMensualDetalle = calcularProduccionMensual(produccionAnual, entrada.ciudad);
+
   return {
     entrada: { ...entrada },
     parametros,
@@ -294,6 +329,7 @@ const calcularCotizacion = (entrada) => {
     consumoAnual,
     produccionAnual,
     produccionMensual,
+    produccionMensualDetalle,
     consumoMensualSuplido,
     excedentes,
     potenciaKWp,
@@ -302,6 +338,7 @@ const calcularCotizacion = (entrada) => {
     areaSistema,
     co2Anual,
     arbolesAnual,
+    kmEvitadosAnual,
     costos: {
       paneles: costoPaneles,
       estructura: costoEstructura,

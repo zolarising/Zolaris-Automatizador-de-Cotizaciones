@@ -148,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
     mostrarAviso('Cotización ' + registroActual.codigo + ' guardada en el historial.', 'exito');
   });
 
-  document.getElementById('botonImprimir').addEventListener('click', (evento) => {
+  const botonImprimir = document.getElementById('botonImprimir');
+  botonImprimir.addEventListener('click', (evento) => {
     evento.preventDefault();
     if (!cotizacionActual) {
       return;
@@ -156,7 +157,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const codigo = registroActual ? registroActual.codigo : 'PRECOTIZACIÓN';
     const fechaISO = registroActual ? registroActual.fechaISO : new Date().toISOString();
     prepararHojaPdf(cotizacionActual, codigo, fechaISO, imagenProyecto);
-    window.print();
+
+    // El PDF incluye más de 15 imágenes reales (portafolio, marcas, logos,
+    // fondos). Sin esperar a que carguen, window.print() puede abrirse antes
+    // de que el navegador termine de descargarlas y salen en blanco.
+    const textoOriginal = botonImprimir.textContent;
+    botonImprimir.disabled = true;
+    botonImprimir.textContent = 'Preparando imágenes…';
+    esperarImagenesCargadas(document.getElementById('hojaPdf')).then(() => {
+      botonImprimir.disabled = false;
+      botonImprimir.textContent = textoOriginal;
+      window.print();
+    });
   });
 
   document.getElementById('botonNueva').addEventListener('click', (evento) => {

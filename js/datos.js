@@ -56,6 +56,32 @@ const TABLA_GENERACION = {
 const GENERACION_POR_DEFECTO = 1500.0;
 
 /**
+ * Perfil mensual relativo de generación (índice normalizado, promedio anual = 1.0).
+ * Fuente: NASA POWER (power.larc.nasa.gov), climatología de 20 años (2001-2020),
+ * parámetro ALLSKY_SFC_SW_DWN (irradiación global horizontal, kWh/m²/día), consultado
+ * por coordenadas de cada ciudad. Refleja el régimen de lluvias bimodal de la región
+ * andina (mínimos relativos en años húmedos como noviembre) — la generación real de
+ * cada mes se calcula como: producciónAnual/12 × índice[mes].
+ * Solo hay perfil propio para las 4 ciudades con datos NASA POWER verificados; el resto
+ * usa PERFIL_MENSUAL_GENERICO (promedio de esas 4, variación ecuatorial típica: entre
+ * -7% y +4% respecto al promedio anual — la variación real por ciudad puede ser mayor,
+ * ver nota en README).
+ * Orden: [Ene, Feb, Mar, Abr, May, Jun, Jul, Ago, Sep, Oct, Nov, Dic].
+ */
+const PERFIL_MENSUAL_CIUDAD = {
+  'Medellín': [0.966, 0.986, 0.934, 0.938, 1.001, 1.068, 1.114, 1.126, 1.090, 0.964, 0.897, 0.917],
+  'Bogotá': [1.060, 1.047, 0.972, 0.959, 0.966, 0.970, 0.989, 0.998, 1.050, 1.015, 0.972, 1.002],
+  'Cali': [1.000, 1.007, 0.983, 1.014, 0.988, 0.978, 1.009, 1.031, 1.057, 1.019, 0.964, 0.952],
+  'Cartagena': [1.041, 1.107, 1.100, 1.056, 0.971, 1.004, 1.028, 1.011, 0.968, 0.894, 0.866, 0.955]
+};
+
+/** Perfil mensual genérico (promedio de las 4 ciudades con dato NASA POWER verificado). */
+const PERFIL_MENSUAL_GENERICO = [1.02, 1.04, 1.00, 0.99, 0.98, 1.01, 1.04, 1.04, 1.04, 0.97, 0.93, 0.96];
+
+/** Nombres de los meses, para presentación (mismo orden que los perfiles). */
+const NOMBRES_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+/**
  * Tipos de techo disponibles (hoja Cot, campo "Tipo de techo").
  */
 const TIPOS_DE_TECHO = ['Barro', 'Otro'];
@@ -107,7 +133,10 @@ const CONSTANTES = {
   PCT_BENEFICIO_TRIBUTARIO: 0.40,   // Cot L23 (40% deducible, como en datos_zolaris)
   AREA_POR_PANEL_M2: 3.09,          // COT PDF C6
   FACTOR_CO2: 0.53,                 // MAIN C15 (CO2/año = 0.53 × producción anual)
-  FACTOR_ARBOLES_DIV: 27            // MAIN C16 (árboles = CO2 / 27)
+  FACTOR_ARBOLES_DIV: 27,           // MAIN C16 (árboles = CO2 / 27)
+  FACTOR_KM_POR_KG_CO2: 0.150        // kg CO2 emitidos por km de un vehículo particular promedio
+                                     // (valor de referencia usado en calculadoras de huella de carbono);
+                                     // km evitados/año = co2Anual [kg] / este factor.
 };
 
 /**
@@ -143,10 +172,10 @@ const EMPRESA = {
   tiempoEntrega: '70 Días una vez realizada la orden de compra con el anticipo.',
   // Forma de pago (página 8)
   formaPago: [
-    '20% - Anticipo',
-    '40% - Montaje de módulos fotovoltaicos',
-    '30% - Entrega proyecto',
-    '10% - Legalización RETIE'
+    { pct: '20%', label: 'Anticipo' },
+    { pct: '40%', label: 'Montaje de módulos fotovoltaicos' },
+    { pct: '30%', label: 'Entrega proyecto' },
+    { pct: '10%', label: 'Legalización RETIE' }
   ]
 };
 
@@ -158,7 +187,9 @@ const TEXTOS_PDF = {
   galeria: [
     'EDIFICIO PALERMO - 20 kW', 'CASINO RIO - 30.6 kW', 'CASA RIO NEGRO 12.4 kW',
     'FAMILIA LOPEZ - 5 kW', 'EDIFICIO SANTORINI 65.7 kW', 'FINCA LA ESPERANZA - 5.8 kW',
-    'CASA BRICEÑO - 20.7 kW', 'SUBESTACION BUCHELLI - 20 kW', 'FINCA PASIZARA - 14.6 kW'
+    'CASA BRICEÑO - 20.7 kW', 'SUBESTACION BUCHELLI - 20 kW', 'FINCA PASIZARA - 14.6 kW',
+    'LA CANCHA - 71.5 kWp', 'CARNES NIKO - 40 kWp', 'SUBESTACIÓN CEDENAR - 23.3 kWp',
+    'SENDEROS PEREIRA - 10 kWp', 'FINCA REMOLINO - 11 kWp', 'CASA CABRERA - 8.7 kWp'
   ],
   // Página 3: marketing (la factura sube).
   marketingTitulo: 'LA FACTURA DE ENERGÍA SIEMPRE SUBE, ¿QUÉ DECIDES HACER?',
@@ -180,7 +211,8 @@ const TEXTOS_PDF = {
       '25 años de vida útil paneles',
       '12 años garantía de fábrica inversor y paneles',
       '1 año garantía instalación',
-      'Mantenimiento gratuito año 1'
+      'Mantenimiento gratuito año 1',
+      'Póliza de cumplimiento — cubre el 100% de la inversión'
     ] },
     { titulo: 'Beneficios Tributarios', puntos: [
       '50% deducción de renta',
