@@ -68,9 +68,10 @@
           <h2 class="grupo-campos__titulo">Consumo y tarifa</h2>
           <div class="grupo-campos__rejilla">
             <div class="campo">
-              <label class="campo__etiqueta" for="campoConsumo">Consumo promedio (kWh/mes)</label>
+              <label class="campo__etiqueta" for="campoConsumo">Consumo promedio real (kWh/mes)</label>
               <input class="campo__entrada" id="campoConsumo" name="consumo" type="number"
                      min="1" step="any" inputmode="decimal" placeholder="Ej. 6500">
+              <span class="campo__ayuda">El consumo TOTAL real de la factura del cliente — no lo ajustes para forzar un tamaño de sistema, usa el campo "Porcentaje a suplir" para eso.</span>
               <span class="campo__error" data-error-de="consumo" role="alert"></span>
             </div>
             <div class="campo">
@@ -82,7 +83,8 @@
             <div class="campo">
               <label class="campo__etiqueta" for="campoPorcentaje">Porcentaje a suplir (%)</label>
               <input class="campo__entrada" id="campoPorcentaje" name="porcentaje" type="number"
-                     min="1" max="100" step="any" inputmode="decimal" value="100">
+                     min="1" max="300" step="any" inputmode="decimal" value="100">
+              <span class="campo__ayuda">% real de la factura que cubrirá el sistema (100 = toda la factura). Usa más de 100 si quieres que además genere excedente para vender a la red.</span>
               <span class="campo__error" data-error-de="porcentaje" role="alert"></span>
             </div>
             <div class="campo">

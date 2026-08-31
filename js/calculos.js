@@ -200,7 +200,9 @@ const redondear = (valor, decimales) => {
  * @param {string} entrada.ciudad        Ciudad del proyecto.
  * @param {number} entrada.consumo       Consumo promedio [kWh/mes].
  * @param {string} entrada.tipoTecho     Tipo de techo.
- * @param {number} entrada.porcentaje    Porcentaje a suplir (0 a 100).
+ * @param {number} entrada.porcentaje    % real de la factura a cubrir con el sistema (puede
+ *                                        superar 100 para dimensionar con excedente
+ *                                        intencional, ej. 130 = generar 30% de más).
  * @param {number} entrada.precioKwh     Tarifa de energía [COP/kWh].
  * @param {number} entrada.descuento     Descuento (negativo, ej. -10 = 10% de rebaja).
  * @param {Object} [entrada.parametros]   Parámetros financieros (ver PARAMETROS_DEFECTO).
@@ -214,17 +216,30 @@ const calcularCotizacion = (entrada) => {
 
   // --- Generación y dimensionamiento (hoja MAIN) ---
   const consumoAnual = (consumo * 12) - (consumo * 12 * C.FACTOR_PERDIDAS_ANUAL); // G2
-  const potenciaKWp = redondear(
-    (consumo * C.MARGEN_FUTURO)
-      / (C.DIAS_MES * C.HORAS_SOL_PICO * C.EFICIENCIA_INVERSOR * C.EFICIENCIA_ARRAY)
-      * pctSuplir,
-    1
-  ); // G5  =ROUND((C5*1.2)/(30*4.5*0.95*0.9)*C7, 1)
-  const numPaneles = Math.ceil((potenciaKWp * 1000) / C.POTENCIA_PANEL_W); // G6
   const generacionEspecifica = obtenerGeneracion(entrada.ciudad);
+  // Dimensionamiento directo sobre el rendimiento específico real de la ciudad: se
+  // despeja potenciaKWp para que produccionAnual (generacionEspecifica × potenciaKWp)
+  // sea exactamente `consumo × 12 × pctSuplir`. Así "Porcentaje a suplir" corresponde
+  // al % real de cobertura resultante (verificable en `coberturaFacturaPct`), en vez de
+  // depender de constantes de irradiancia genéricas (HORAS_SOL_PICO/EFICIENCIA_*) que no
+  // coinciden con generacionEspecifica y antes producían sistemas sobredimensionados
+  // ~50% por encima del % solicitado. Para dejar margen de crecimiento futuro
+  // intencional, se puede pedir un porcentaje mayor a 100 (ej. 120 = generar 20% de más).
+  const potenciaKWp = redondear((consumo * 12 * pctSuplir) / generacionEspecifica, 1);
+  const numPaneles = Math.ceil((potenciaKWp * 1000) / C.POTENCIA_PANEL_W); // G6
   const produccionAnual = generacionEspecifica * potenciaKWp; // G3
   const excedentes = Math.max(0, produccionAnual - (consumo * 12)); // G4
   const inversor = buscarInversor(potenciaKWp); // G8
+
+  // Energía que el sistema realmente compensa de la factura del cliente: nunca puede
+  // superar el consumo real, así el sistema genere más (ese excedente se vende aparte,
+  // ver `excedentes`/`ingresoMensual`). Si el sistema no alcanza a cubrir el 100% del
+  // consumo, el ahorro debe calcularse solo sobre lo que sí se autoconsume — de lo
+  // contrario, cualquier cotización con "Porcentaje a suplir" menor a ~100% mostraría un
+  // ahorro inflado, como si se pagara $0 por energía que en realidad se sigue comprando
+  // a la red.
+  const autoconsumoAnual = Math.min(produccionAnual, consumo * 12); // kWh/año realmente cubiertos
+  const coberturaFacturaPct = redondear(Math.min(100, (autoconsumoAnual / (consumo * 12)) * 100), 0); // % real de la factura cubierto (tope 100%)
 
   // --- Costos (hoja MAIN, columna I, acumulativos) ---
   // La estructura (D26) y la instalación eléctrica (D40) escalan con el número de
@@ -249,7 +264,10 @@ const calcularCotizacion = (entrada) => {
   const totalProyecto = subtotal + descuentoCop;                              // I15
 
   // --- Análisis financiero (hojas MAIN y Cot) ---
-  const ahorroMensual = (consumoAnual / 12) * entrada.precioKwh;              // G17
+  // Ojo: se calcula sobre `autoconsumoAnual` (lo que el sistema realmente compensa),
+  // no sobre `consumoAnual` (la factura completa) — así el ahorro es correcto también
+  // cuando el sistema se dimensiona para cubrir menos del 100% de la factura.
+  const ahorroMensual = (autoconsumoAnual / 12) * (1 - C.FACTOR_PERDIDAS_ANUAL) * entrada.precioKwh; // G17
   const ingresoMensual = (excedentes / 12) * entrada.precioKwh * C.FACTOR_VENTA_EXCEDENTES; // G18
   const beneficioTributario = totalProyecto * C.PCT_BENEFICIO_TRIBUTARIO;     // Cot L23
   const payback = Math.ceil(
@@ -327,6 +345,8 @@ const calcularCotizacion = (entrada) => {
     parametros,
     generacionEspecifica,
     consumoAnual,
+    autoconsumoAnual,
+    coberturaFacturaPct,
     produccionAnual,
     produccionMensual,
     produccionMensualDetalle,

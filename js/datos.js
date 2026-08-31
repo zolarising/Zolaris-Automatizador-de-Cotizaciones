@@ -10,43 +10,67 @@
 
 /**
  * Generación específica anual por ciudad [kWh/kWp/año].
- * Fuente: hoja "Generación Específica" (columna C).
- * Agrupada por departamento solo a modo informativo.
+ * Ajustado el 2026-08-27 contra PVGIS (Comisión Europea, JRC — herramienta pública
+ * independiente, https://re.jrc.ec.europa.eu/api/v5_2/PVcalc, pérdidas de sistema 14%,
+ * ángulo óptimo, sin sombreado de horizonte). Los valores originales de
+ * "datos_zolaris.xlsm" resultaron sistemáticamente 8-26% más altos que PVGIS en todas
+ * las ciudades donde PVGIS tenía datos confiables — un sesgo consistente, no ruido.
+ * Metodología por ciudad:
+ *  - Lectura directa de PVGIS cuando el valor era estable y coherente con ciudades
+ *    vecinas (la mayoría de la tabla).
+ *  - Promedio de varias lecturas cercanas cuando el punto exacto daba resultados
+ *    inconsistentes pero el área sí tenía cobertura válida (Pereira, Yumbo).
+ *  - Para ciudades donde PVGIS-NSRDB tiene huecos de datos reales (valores absurdos,
+ *    ~50% más bajos que localidades vecinas, cambian erráticamente con corrimientos de
+ *    0.05°): se tomó el valor de la ciudad confiable más cercana, según instrucción
+ *    directa del usuario (ej. Rionegro → Medellín). Marcadas con "// [proxy: <ciudad>]".
+ *  - Pasto: PVGIS no dio ninguna lectura confiable en esa zona (huecos de datos). Se
+ *    reemplazó por dato real de campo del usuario (2026-08-27): sistema de 10 kWp
+ *    instalado en Pasto genera ~1.000 kWh/mes medidos → 1.200 kWh/kWp/año. Coincide
+ *    razonablemente con NASA POWER (irradiancia GHI de Pasto ≈ 82% de la de Medellín,
+ *    lo que sobre la base de Medellín en esta tabla da ~1.135), así que 1.200 es
+ *    plausible y además es medición real, no modelo — se usa como valor definitivo.
+ *    Taminango y Chachaguí siguen como proxy de Pasto (mismo departamento, sin dato
+ *    propio confiable).
+ *  - Popayán: PVGIS no dio ninguna lectura plenamente confiable ni siquiera probando
+ *    radios amplios (~20km) — queda con la mejor estimación disponible (proxy Cali)
+ *    pero con confianza más baja; revisar si aparecen quejas de sub/sobre-generación en
+ *    proyectos reales de esa zona.
  */
 const TABLA_GENERACION = {
-  'Medellín': 1556.4,
-  'Envigado': 1528.5,
-  'Rionegro': 1660.0,
-  'Cartagena': 1840.0,
-  'Marinilla': 1662.9,
-  'El Santuario': 1640.2,
-  'Santa Elena': 1535.0,
-  'Guarne': 1571.9,
-  'Copacabana': 1547.0,
-  'Girardota': 1577.2,
-  'Barbosa': 1546.9,
-  'Itagui': 1535.3,
-  'Sabaneta': 1506.4,
-  'La Estrella': 1499.1,
-  'Caldas': 1449.7,
-  'El Retiro': 1495.1,
-  'La Ceja': 1562.2,
-  'La Unión': 1637.0,
-  'El Peñol': 1613.9,
-  'San Pedro de los Milagros': 1552.5,
-  'Bello': 1580.8,
-  'Santa Fe de Antioquia': 1620.4,
-  'Sopetrán y San Jerónimo': 1614.5,
-  'Pasto': 1332.6,
-  'Taminango': 1560.3,
-  'Chachaguí': 1411.5,
-  'Bogotá': 1391.6,
-  'Cali': 1503.3,
-  'Yumbo': 1493.3,
-  'Popayan': 1410.0,
-  'Pereira': 1449.7,
-  'Carmen del Viboral': 1571.9,
-  'Tulua': 1503.3
+  'Medellín': 1388.0,
+  'Envigado': 1337.8,
+  'Rionegro': 1388.0,             // [proxy: Medellín] PVGIS con huecos de datos en el punto exacto
+  'Cartagena': 1457.3,
+  'Marinilla': 1388.0,            // [proxy: Medellín] ídem
+  'El Santuario': 1458.2,
+  'Santa Elena': 1388.0,          // [proxy: Medellín] ídem
+  'Guarne': 1349.1,
+  'Copacabana': 1388.0,           // [proxy: Medellín] ídem
+  'Girardota': 1436.0,
+  'Barbosa': 1388.0,              // [proxy: Medellín] ídem
+  'Itagui': 1339.8,
+  'Sabaneta': 1339.7,
+  'La Estrella': 1287.6,
+  'Caldas': 1261.8,
+  'El Retiro': 1329.3,
+  'La Ceja': 1388.0,              // [proxy: Medellín] ídem
+  'La Unión': 1388.0,             // [proxy: Medellín] ídem
+  'El Peñol': 1388.0,             // [proxy: Medellín] ídem
+  'San Pedro de los Milagros': 1359.5,
+  'Bello': 1402.2,
+  'Santa Fe de Antioquia': 1420.7,
+  'Sopetrán y San Jerónimo': 1381.4,
+  'Pasto': 1200.0,                // dato real de campo (10 kWp -> ~1.000 kWh/mes medidos)
+  'Taminango': 1200.0,            // [proxy: Pasto] sin dato propio confiable
+  'Chachaguí': 1200.0,            // [proxy: Pasto] ídem
+  'Bogotá': 1257.5,
+  'Cali': 1372.7,
+  'Yumbo': 1314.6,
+  'Popayan': 1372.7,              // [proxy: Cali] sin lectura confiable ni en radio amplio — baja confianza
+  'Pereira': 1263.2,
+  'Carmen del Viboral': 1388.0,   // [proxy: Medellín] PVGIS con huecos de datos en el punto exacto
+  'Tulua': 1386.7
 };
 
 /**

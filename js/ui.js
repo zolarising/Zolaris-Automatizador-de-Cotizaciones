@@ -196,8 +196,8 @@ const leerFormulario = (formulario) => {
     marcarError(formulario, 'consumo', 'El consumo debe ser un número mayor que cero.');
     valido = false;
   }
-  if (!Number.isFinite(porcentaje) || porcentaje <= 0 || porcentaje > 100) {
-    marcarError(formulario, 'porcentaje', 'El porcentaje debe estar entre 1 y 100.');
+  if (!Number.isFinite(porcentaje) || porcentaje <= 0 || porcentaje > 300) {
+    marcarError(formulario, 'porcentaje', 'El porcentaje debe estar entre 1 y 300.');
     valido = false;
   }
   if (!Number.isFinite(precioKwh) || precioKwh <= 0) {
@@ -953,7 +953,9 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
     });
   const rowTotalAntes = crear('div', { clase: 'row hi-row' });
   rowTotalAntes.appendChild(crear('span', { texto: 'Valor a pagar' }));
-  const bTotalAntes = crear('b', { texto: formatoMoneda(f.ahorroMensual + f.ingresoMensual) });
+  // Factura real sin solar: consumo × tarifa. No debe incluir ingresoMensual (venta de
+  // excedentes) — ese ingreso solo existe si ya tienes el sistema instalado.
+  const bTotalAntes = crear('b', { texto: formatoMoneda(e.consumo * e.precioKwh) });
   bTotalAntes.style.color = 'var(--pdf-bad)';
   rowTotalAntes.appendChild(bTotalAntes);
   antes.appendChild(rowTotalAntes);
@@ -963,7 +965,7 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
 
   const despues = crear('div', { clase: 'pdf-paycard hi' });
   despues.appendChild(crear('h3', { texto: 'Factura de energía · Con Zolaris' }));
-  [['Consumo del período', formatoNumero(e.consumo) + ' kWh'], ['Cubierto por tu sistema solar', formatoPorcentaje(e.porcentaje, 0)]]
+  [['Consumo del período', formatoNumero(e.consumo) + ' kWh'], ['Cubierto por tu sistema solar', formatoPorcentaje(r.coberturaFacturaPct, 0)]]
     .forEach(([k, v]) => {
       const row = crear('div', { clase: 'row' });
       row.appendChild(crear('span', { texto: k }));
@@ -1025,7 +1027,7 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
     clase: 'pdf-lead',
     texto: excedenteMensual > 0
       ? 'Tu sistema está dimensionado para generar más de lo que consumes hoy — el excedente no se pierde, se vende a la red.'
-      : 'Tu sistema cubre ' + formatoPorcentaje(e.porcentaje, 0) + ' de tu consumo — el resto lo sigues tomando de la red normalmente, sin quedarte sin energía.'
+      : 'Tu sistema cubre ' + formatoPorcentaje(r.coberturaFacturaPct, 0) + ' de tu consumo — el resto lo sigues tomando de la red normalmente, sin quedarte sin energía.'
   }));
 
   const donutGrid = crear('div', { clase: 'pdf-donut-grid' });
@@ -1115,7 +1117,7 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   headlineAhorro.appendChild(numAhorro);
   headlineAhorro.appendChild(crear('div', {
     clase: 'desc',
-    texto: 'Ahorro proyectado, cubriendo el ' + formatoPorcentaje(e.porcentaje, 0) + ' de tu factura anual desde el primer año de operación.'
+    texto: 'Ahorro proyectado, cubriendo el ' + formatoPorcentaje(r.coberturaFacturaPct, 0) + ' de tu factura anual desde el primer año de operación.'
   }));
   s5.appendChild(headlineAhorro);
   const chipsAhorro = crear('div', { clase: 'pdf-support-chips' });
