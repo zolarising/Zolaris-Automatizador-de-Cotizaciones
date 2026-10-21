@@ -56,6 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
     vistaPrevia.classList.add('oculto');
   });
 
+  /* ----------------- Respaldo de energía (batería) ----------------- */
+
+  const campoIncluirBateria = document.getElementById('campoIncluirBateria');
+  const grupoCapacidadBateria = document.getElementById('grupoCapacidadBateria');
+
+  campoIncluirBateria.addEventListener('change', () => {
+    grupoCapacidadBateria.classList.toggle('oculto', !campoIncluirBateria.checked);
+  });
+
   /** Muestra una sección y oculta las demás (o varias a la vez). */
   const mostrarSecciones = (visibles) => {
     [seccionFormulario, seccionResultado, seccionHistorial].forEach((s) => {
@@ -180,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     imagenProyecto = null;
     imagenPrevia.removeAttribute('src');
     vistaPrevia.classList.add('oculto');
+    grupoCapacidadBateria.classList.add('oculto');
     mostrarSecciones([seccionFormulario]);
   });
 

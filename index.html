@@ -112,6 +112,20 @@
             </div>
           </div>
 
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta">
+              <input type="checkbox" id="campoIncluirBateria" name="incluirBateria">
+              Incluir respaldo de energía (batería)
+            </label>
+            <span class="campo__ayuda">Se agrega como equipo incluido en el detalle del sistema, sin modificar el valor total de la cotización.</span>
+          </div>
+          <div class="campo oculto" id="grupoCapacidadBateria">
+            <label class="campo__etiqueta" for="campoCapacidadBateria">Capacidad de la batería (kWh)</label>
+            <input class="campo__entrada" id="campoCapacidadBateria" name="capacidadBateria"
+                   type="number" min="0.5" step="0.5" value="5" inputmode="decimal">
+            <span class="campo__error" data-error-de="capacidadBateria" role="alert"></span>
+          </div>
+
         <!-- Parámetros financieros avanzados (predefinidos, editables) -->
         <details class="parametros campo--ancho">
           <summary class="parametros__titulo">Parámetros financieros avanzados</summary>

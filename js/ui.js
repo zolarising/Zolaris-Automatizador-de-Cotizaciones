@@ -209,6 +209,14 @@ const leerFormulario = (formulario) => {
     valido = false;
   }
 
+  // Respaldo de energía (batería) — opcional, no afecta el cálculo de costos.
+  const incluirBateria = formulario.elements.incluirBateria.checked;
+  const capacidadBateria = parseFloat(formulario.elements.capacidadBateria.value);
+  if (incluirBateria && (!Number.isFinite(capacidadBateria) || capacidadBateria <= 0)) {
+    marcarError(formulario, 'capacidadBateria', 'La capacidad de la batería debe ser mayor que cero.');
+    valido = false;
+  }
+
   // Parámetros financieros avanzados (tienen valor por defecto en el HTML).
   const pagoInicialLeasing = parseFloat(formulario.elements.pagoInicialLeasing.value);
   const plazoLeasingAnios = parseFloat(formulario.elements.plazoLeasingAnios.value);
@@ -240,7 +248,10 @@ const leerFormulario = (formulario) => {
   if (!valido) {
     return null;
   }
-  return { nombre, ciudad, tipoTecho, consumo, porcentaje, precioKwh, descuento, parametros };
+  return {
+    nombre, ciudad, tipoTecho, consumo, porcentaje, precioKwh, descuento, parametros,
+    incluirBateria, capacidadBateria: incluirBateria ? capacidadBateria : null
+  };
 };
 
 /* ====================== Render de resultados (pantalla) ====================== */
@@ -1138,16 +1149,26 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   /* ---------- 06 · Tecnología ---------- */
   const s6 = pdfSeccion('08', 'Tecnología que puedes confiar', 'Todo lo que incluye tu sistema, en detalle', false);
   const checklistTec = crear('div', { clase: 'pdf-checklist' });
-  [
+  const itemsTecnologia = [
     ['☀️', 'Panel solar monocristalino ZN SHINE 730 Wp', '× ' + formatoNumero(r.numPaneles)],
-    ['⚡', 'Inversor(es) de string — ' + r.inversor.mppt + ' MPPT, ' + formatoNumero(r.inversor.potencia, 1) + ' kW instalados', '× ' + formatoNumero(r.inversor.unidades)],
+    ['⚡', 'Inversor(es) de string — ' + r.inversor.mppt + ' MPPT, ' + formatoNumero(r.inversor.potencia, 1) + ' kW instalados', '× ' + formatoNumero(r.inversor.unidades)]
+  ];
+  if (r.entrada.incluirBateria) {
+    itemsTecnologia.push([
+      '🔋',
+      'Respaldo de energía — batería de litio (LiFePO4) de ' + formatoNumero(r.entrada.capacidadBateria, 1) + ' kWh, compatible con tu inversor · incluida sin costo adicional',
+      ''
+    ]);
+  }
+  itemsTecnologia.push(
     ['🔧', 'Estructura fija en aluminio — anclaje certificado, adaptado a tu tipo de techo', ''],
     ['📡', 'Sistema de monitoreo remoto — producción en tiempo real desde app o PC', ''],
     ['🔌', 'Medidor bifásico bidireccional — trámite ante el operador de red (CREG 174) incluido', ''],
     ['🧵', 'Cableado solar, tablero de protecciones DC/AC y accesorios de instalación', ''],
     ['👷', 'Ingeniería, instalación y puesta en marcha — equipo certificado RETIE', ''],
     ['🌱', 'Equivale a ' + formatoNumero(r.arbolesAnual, 0) + ' árboles en CO₂ evitado cada año', '']
-  ].forEach(([ico, txt, qty]) => {
+  );
+  itemsTecnologia.forEach(([ico, txt, qty]) => {
     const row = crear('div', { clase: 'item' });
     row.appendChild(crear('div', { clase: 'ico', texto: ico }));
     const txtWrap = crear('div', { clase: 'txt' });
