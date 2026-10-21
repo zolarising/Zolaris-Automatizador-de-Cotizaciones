@@ -10,7 +10,7 @@
  */
 
 // URL del script publicado ("Implementar como aplicación web"). Vacía = el registro está desactivado.
-const REGISTRO_CENTRAL_URL = '';
+const REGISTRO_CENTRAL_URL = 'https://script.google.com/macros/s/AKfycbyvrFmAQa9LeA7fx1tcQftPaZU9c5NyVOOKV5UViGQOPiVZeF7UXpv9O00-TOe3Drnu/exec';
 // Clave sencilla compartida con el script, para descartar envíos que no vengan del cotizador.
 const REGISTRO_CENTRAL_CLAVE = 'zolaris-cotizador-2026';
 
