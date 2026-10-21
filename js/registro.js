@@ -36,6 +36,7 @@ const resumenParaRegistro = (registro) => {
   return {
     clave: REGISTRO_CENTRAL_CLAVE,
     codigo: registro.codigo,
+    codigoLocal: registro.codigo,
     archivo: nombreArchivoPropuesta(registro) + '.pdf',
     carpeta: registro.carpeta,
     fecha: registro.fechaISO,

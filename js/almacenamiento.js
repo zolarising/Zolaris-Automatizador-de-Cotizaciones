@@ -102,3 +102,20 @@ const eliminarCotizacion = (id) => {
   localStorage.setItem(CLAVE_COTIZACIONES, JSON.stringify(restantes));
   return restantes.length !== cotizaciones.length;
 };
+
+/**
+ * Actualiza campos de una cotización ya guardada (por ejemplo, el código central).
+ * @param {string} id
+ * @param {Object} cambios campos a reemplazar.
+ * @returns {Object|null} el registro actualizado.
+ */
+const actualizarCotizacion = (id, cambios) => {
+  const cotizaciones = listarCotizaciones();
+  const indice = cotizaciones.findIndex((cot) => cot.id === id);
+  if (indice < 0) {
+    return null;
+  }
+  cotizaciones[indice] = Object.assign({}, cotizaciones[indice], cambios);
+  localStorage.setItem(CLAVE_COTIZACIONES, JSON.stringify(cotizaciones));
+  return cotizaciones[indice];
+};

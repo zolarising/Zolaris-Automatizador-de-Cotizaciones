@@ -169,34 +169,44 @@ document.addEventListener('DOMContentLoaded', () => {
       botonGuardar.disabled = true;
       botonGuardar.textContent = 'Cotización guardada';
     }
-    const codigo = registroActual.codigo;
-    const fechaISO = registroActual.fechaISO;
-    prepararHojaPdf(cotizacionActual, codigo, fechaISO, imagenProyecto);
+    const textoOriginal = botonImprimir.textContent;
+    botonImprimir.disabled = true;
 
-    // Registro central (Hoja de Google de Zolaris) y nombre estándar del archivo PDF.
-    registrarEnCentral(registroActual).then((res) => {
-      if (res.ok) {
-        mostrarAviso('Cotización ' + codigo + ' registrada. Guarda el PDF en la carpeta del cliente en el Drive.', 'exito');
-        if (res.carpetaUrl) {
-          mostrarEnlaceCarpeta(res.carpetaUrl);
+    // 1) Registro central: asigna el número único (ZOL-AAAA-NNNN) antes de armar el PDF.
+    //    Si la cotización ya tiene número (reimpresión), no se registra de nuevo.
+    //    Si el registro no responde, se usa el código local y se avisa.
+    let paso = Promise.resolve();
+    if (!registroActual.codigoCentral) {
+      botonImprimir.textContent = 'Registrando…';
+      paso = registrarEnCentral(registroActual).then((res) => {
+        if (res.ok && res.codigo) {
+          registroActual = actualizarCotizacion(registroActual.id, {
+            codigo: res.codigo, codigoCentral: res.codigo, carpetaUrl: res.carpetaUrl || ''
+          }) || Object.assign(registroActual, { codigo: res.codigo, codigoCentral: res.codigo, carpetaUrl: res.carpetaUrl || '' });
+          mostrarAviso('Cotización ' + res.codigo + ' registrada. Guarda el PDF en la carpeta del cliente en el Drive.', 'exito');
+        } else {
+          mostrarAviso((res.mensaje || 'No se pudo registrar.') + ' Se usa el código local ' + registroActual.codigo + '.', 'info');
         }
-      } else {
-        mostrarAviso(res.mensaje, 'info');
-      }
-    });
-    const tituloOriginal = document.title;
-    document.title = nombreArchivoPropuesta(registroActual);
-    window.addEventListener('afterprint', () => { document.title = tituloOriginal; }, { once: true });
+      });
+    }
 
+    // 2) PDF con el código definitivo y nombre estándar del archivo.
     // El PDF incluye más de 15 imágenes reales (portafolio, marcas, logos,
     // fondos). Sin esperar a que carguen, window.print() puede abrirse antes
     // de que el navegador termine de descargarlas y salen en blanco.
-    const textoOriginal = botonImprimir.textContent;
-    botonImprimir.disabled = true;
-    botonImprimir.textContent = 'Preparando imágenes…';
-    esperarImagenesCargadas(document.getElementById('hojaPdf')).then(() => {
+    paso.then(() => {
+      if (registroActual.carpetaUrl) {
+        mostrarEnlaceCarpeta(registroActual.carpetaUrl);
+      }
+      prepararHojaPdf(cotizacionActual, registroActual.codigo, registroActual.fechaISO, imagenProyecto);
+      botonImprimir.textContent = 'Preparando imágenes…';
+      return esperarImagenesCargadas(document.getElementById('hojaPdf'));
+    }).then(() => {
       botonImprimir.disabled = false;
       botonImprimir.textContent = textoOriginal;
+      const tituloOriginal = document.title;
+      document.title = nombreArchivoPropuesta(registroActual);
+      window.addEventListener('afterprint', () => { document.title = tituloOriginal; }, { once: true });
       window.print();
     });
   });
