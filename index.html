@@ -48,6 +48,45 @@
               <span class="campo__error" data-error-de="nombre" role="alert"></span>
             </div>
             <div class="campo">
+              <label class="campo__etiqueta" for="campoTelefono">Teléfono / WhatsApp del cliente</label>
+              <input class="campo__entrada" id="campoTelefono" name="telefono" type="tel"
+                     autocomplete="off" placeholder="Ej. 3104021083" inputmode="tel">
+              <span class="campo__error" data-error-de="telefono" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoCorreo">Correo del cliente (opcional)</label>
+              <input class="campo__entrada" id="campoCorreo" name="correo" type="email"
+                     autocomplete="off" placeholder="cliente@correo.com">
+              <span class="campo__error" data-error-de="correo" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoAsesor">Asesor que cotiza</label>
+              <select class="campo__entrada" id="campoAsesor" name="asesor">
+                <option value="">Selecciona el asesor…</option>
+                <option>Gabriel</option>
+                <option>Luis Alberto</option>
+                <option>Sebastián</option>
+                <option>Néstor</option>
+              </select>
+              <span class="campo__error" data-error-de="asesor" role="alert"></span>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="campoFuente">¿Cómo llegó el cliente?</label>
+              <select class="campo__entrada" id="campoFuente" name="fuente">
+                <option value="">Selecciona la fuente…</option>
+                <option>WhatsApp (bot Sol)</option>
+                <option>Llamada</option>
+                <option>Referido</option>
+                <option>Meta / Instagram (pauta)</option>
+                <option>Página web</option>
+                <option>Feria o evento</option>
+                <option>Cliente actual</option>
+                <option>Licitación / institucional</option>
+                <option>Otro</option>
+              </select>
+              <span class="campo__error" data-error-de="fuente" role="alert"></span>
+            </div>
+            <div class="campo">
               <label class="campo__etiqueta" for="campoCiudad">Ciudad</label>
               <select class="campo__entrada" id="campoCiudad" name="ciudad">
                 <option value="">Selecciona una ciudad…</option>
@@ -219,6 +258,7 @@
   <script src="js/datos.js"></script>
   <script src="js/calculos.js"></script>
   <script src="js/almacenamiento.js"></script>
+  <script src="js/registro.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>
 </body>

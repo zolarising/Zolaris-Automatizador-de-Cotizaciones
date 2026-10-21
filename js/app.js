@@ -163,9 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!cotizacionActual) {
       return;
     }
-    const codigo = registroActual ? registroActual.codigo : 'PRECOTIZACIÓN';
-    const fechaISO = registroActual ? registroActual.fechaISO : new Date().toISOString();
+    // Toda cotización que sale en PDF queda guardada y registrada: si aún no se guardó, se guarda.
+    if (!registroActual) {
+      registroActual = guardarCotizacion(cotizacionActual, imagenProyecto);
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = 'Cotización guardada';
+    }
+    const codigo = registroActual.codigo;
+    const fechaISO = registroActual.fechaISO;
     prepararHojaPdf(cotizacionActual, codigo, fechaISO, imagenProyecto);
+
+    // Registro central (Hoja de Google de Zolaris) y nombre estándar del archivo PDF.
+    registrarEnCentral(registroActual).then((res) => {
+      if (res.ok) {
+        mostrarAviso('Cotización ' + codigo + ' registrada. Guarda el PDF en la carpeta del cliente en el Drive.', 'exito');
+        if (res.carpetaUrl) {
+          mostrarEnlaceCarpeta(res.carpetaUrl);
+        }
+      } else {
+        mostrarAviso(res.mensaje, 'info');
+      }
+    });
+    const tituloOriginal = document.title;
+    document.title = nombreArchivoPropuesta(registroActual);
+    window.addEventListener('afterprint', () => { document.title = tituloOriginal; }, { once: true });
 
     // El PDF incluye más de 15 imágenes reales (portafolio, marcas, logos,
     // fondos). Sin esperar a que carguen, window.print() puede abrirse antes

@@ -245,13 +245,60 @@ const leerFormulario = (formulario) => {
     valido = false;
   }
 
+  // Datos comerciales: quién cotiza, de dónde vino el cliente y cómo contactarlo.
+  const telefono = (formulario.elements.telefono.value || '').replace(/[^0-9+]/g, '');
+  const correo = (formulario.elements.correo.value || '').trim();
+  const asesor = formulario.elements.asesor.value;
+  const fuente = formulario.elements.fuente.value;
+  if (telefono.replace(/\D/g, '').length < 7) {
+    marcarError(formulario, 'telefono', 'Indica el teléfono o WhatsApp del cliente.');
+    valido = false;
+  }
+  if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    marcarError(formulario, 'correo', 'Revisa el correo (o déjalo vacío).');
+    valido = false;
+  }
+  if (!asesor) {
+    marcarError(formulario, 'asesor', 'Selecciona el asesor que cotiza.');
+    valido = false;
+  }
+  if (!fuente) {
+    marcarError(formulario, 'fuente', 'Indica cómo llegó el cliente.');
+    valido = false;
+  }
+
   if (!valido) {
     return null;
   }
   return {
     nombre, ciudad, tipoTecho, consumo, porcentaje, precioKwh, descuento, parametros,
-    incluirBateria, capacidadBateria: incluirBateria ? capacidadBateria : null
+    incluirBateria, capacidadBateria: incluirBateria ? capacidadBateria : null,
+    telefono, correo, asesor, fuente
   };
+};
+
+
+/**
+ * Muestra (o actualiza) un enlace a la carpeta del cliente en el Drive, debajo del resultado.
+ * @param {string} url dirección de la carpeta devuelta por el registro central.
+ */
+const mostrarEnlaceCarpeta = (url) => {
+  let caja = document.getElementById('enlaceCarpeta');
+  if (!caja) {
+    caja = crear('p', { clase: 'campo__ayuda' });
+    caja.id = 'enlaceCarpeta';
+    const destino = document.getElementById('seccionResultado');
+    if (destino) {
+      destino.appendChild(caja);
+    }
+  }
+  vaciar(caja);
+  caja.appendChild(document.createTextNode('📁 Carpeta del cliente en el Drive: '));
+  const enlace = crear('a', { texto: 'abrir carpeta' });
+  enlace.href = url;
+  enlace.target = '_blank';
+  enlace.rel = 'noopener';
+  caja.appendChild(enlace);
 };
 
 /* ====================== Render de resultados (pantalla) ====================== */
