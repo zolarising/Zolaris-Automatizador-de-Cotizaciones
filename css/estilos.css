@@ -871,7 +871,8 @@ body {
 .pdf-headline-number, .pdf-table-wrap, .pdf-grid2, .pdf-grid3, .pdf-compare2,
 .pdf-donut-grid, .pdf-portfolio-grid .pcard, .pdf-impact-grid, .pdf-impact-card,
 .pdf-impact-note, .pdf-pay-steps, .pdf-stat-grid, .pdf-stat-card, .pdf-cta-box,
-.pdf-sign-grid, .hoja-pdf tr {
+.pdf-sign-grid, .hoja-pdf tr, .pdf-checklist .item, .pdf-support-chips,
+.pdf-support-chips .sc, .pdf-lead {
   break-inside: avoid; page-break-inside: avoid;
 }
 .hoja-pdf h2, .hoja-pdf h3, .hoja-pdf h4, .pdf-section-eyebrow { break-after: avoid; page-break-after: avoid; }

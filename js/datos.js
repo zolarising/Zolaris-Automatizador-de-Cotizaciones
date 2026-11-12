@@ -36,6 +36,13 @@
  *    radios amplios (~20km) — queda con la mejor estimación disponible (proxy Cali)
  *    pero con confianza más baja; revisar si aparecen quejas de sub/sobre-generación en
  *    proyectos reales de esa zona.
+ *  - La Guajira (agregada 6-nov-2026, a pedido de Gabriel para el caso Jorge Dangond):
+ *    mismo PVGIS/metodología, lecturas directas limpias y estables, sin huecos de datos
+ *    como en Pasto/Popayán. Riohacha, Maicao, Uribia, Manaure y San Juan del Cesar son
+ *    lectura directa; los demás municipios son proxy del punto real más cercano/similar
+ *    (desierto costero vs. piedemonte sur de la Sierra Nevada). Sigue aplicando el aviso
+ *    de "fuera del territorio Antioquia/Nariño" (ver LECCIONES/zol-propuestas.md) — esto
+ *    solo resuelve que el NÚMERO sea real si Gabriel decide cotizar ahí.
  */
 const TABLA_GENERACION = {
   'Medellín': 1388.0,
@@ -70,7 +77,23 @@ const TABLA_GENERACION = {
   'Popayan': 1372.7,              // [proxy: Cali] sin lectura confiable ni en radio amplio — baja confianza
   'Pereira': 1263.2,
   'Carmen del Viboral': 1388.0,   // [proxy: Medellín] PVGIS con huecos de datos en el punto exacto
-  'Tulua': 1386.7
+  'Tulua': 1386.7,
+  // --- La Guajira (6-nov-2026) ---
+  'Riohacha': 1618.7,
+  'Dibulla': 1618.7,              // [proxy: Riohacha] costa, misma latitud
+  'Maicao': 1581.7,
+  'Albania': 1581.7,              // [proxy: Maicao] interior cercano
+  'Uribia': 1672.4,
+  'Manaure': 1661.9,
+  'San Juan del Cesar': 1652.5,
+  'Villanueva': 1652.5,           // [proxy: San Juan del Cesar] piedemonte sur, misma subregión
+  'Fonseca': 1652.5,              // [proxy: San Juan del Cesar] ídem
+  'Barrancas': 1652.5,            // [proxy: San Juan del Cesar] ídem
+  'Distracción': 1652.5,          // [proxy: San Juan del Cesar] ídem
+  'Hatonuevo': 1652.5,            // [proxy: San Juan del Cesar] ídem
+  'El Molino': 1652.5,            // [proxy: San Juan del Cesar] ídem
+  'Urumita': 1652.5,              // [proxy: San Juan del Cesar] ídem
+  'La Jagua del Pilar': 1652.5    // [proxy: San Juan del Cesar] ídem
 };
 
 /**
@@ -158,9 +181,20 @@ const CONSTANTES = {
   AREA_POR_PANEL_M2: 3.09,          // COT PDF C6
   FACTOR_CO2: 0.53,                 // MAIN C15 (CO2/año = 0.53 × producción anual)
   FACTOR_ARBOLES_DIV: 27,           // MAIN C16 (árboles = CO2 / 27)
-  FACTOR_KM_POR_KG_CO2: 0.150        // kg CO2 emitidos por km de un vehículo particular promedio
+  FACTOR_KM_POR_KG_CO2: 0.150,       // kg CO2 emitidos por km de un vehículo particular promedio
                                      // (valor de referencia usado en calculadoras de huella de carbono);
                                      // km evitados/año = co2Anual [kg] / este factor.
+
+  // Batería — precio real dado por Gabriel (6-nov-2026), reemplaza la regla del 40% del
+  // mismo día: cada batería (módulo Huawei LUNA2000-7-S1, 6,9 kWh útiles) cuesta
+  // COSTO_BATERIA_UNIDAD_COP; cada accesorio Huawei LUNA (hace híbrido el sistema) cuesta
+  // COSTO_LUNA_HUAWEI_COP y soporta hasta BATERIAS_POR_LUNA baterías (4 baterías piden
+  // 2 LUNA). Sigue sin ser cotización formal de Huawei (ver 12_CONTRADICCIONES_Y_PENDIENTES.md);
+  // si cambia el precio real, se actualiza solo aquí.
+  CAPACIDAD_BATERIA_UNIDAD_KWH: 6.9,
+  COSTO_BATERIA_UNIDAD_COP: 5400000,
+  COSTO_LUNA_HUAWEI_COP: 13450000,
+  BATERIAS_POR_LUNA: 3
 };
 
 /**

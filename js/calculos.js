@@ -225,11 +225,14 @@ const calcularCotizacion = (entrada) => {
   // coinciden con generacionEspecifica y antes producían sistemas sobredimensionados
   // ~50% por encima del % solicitado. Para dejar margen de crecimiento futuro
   // intencional, se puede pedir un porcentaje mayor a 100 (ej. 120 = generar 20% de más).
-  const potenciaKWp = redondear((consumo * 12 * pctSuplir) / generacionEspecifica, 1);
-  const numPaneles = Math.ceil((potenciaKWp * 1000) / C.POTENCIA_PANEL_W); // G6
+  const potenciaObjetivoKWp = redondear((consumo * 12 * pctSuplir) / generacionEspecifica, 1);
+  const numPaneles = Math.ceil((potenciaObjetivoKWp * 1000) / C.POTENCIA_PANEL_W); // G6
+  // Potencia REAL instalada = paneles × Wp (antes se mostraba la objetivo: 4,8 vs 5,11 kWp real).
+  const potenciaKWp = redondear((numPaneles * C.POTENCIA_PANEL_W) / 1000, 2);
   const produccionAnual = generacionEspecifica * potenciaKWp; // G3
   const excedentes = Math.max(0, produccionAnual - (consumo * 12)); // G4
-  const inversor = buscarInversor(potenciaKWp); // G8
+  // El inversor se sigue eligiendo con la potencia objetivo (no cambia precios).
+  const inversor = buscarInversor(potenciaObjetivoKWp); // G8
 
   // Energía que el sistema realmente compensa de la factura del cliente: nunca puede
   // superar el consumo real, así el sistema genere más (ese excedente se vende aparte,
@@ -254,7 +257,19 @@ const calcularCotizacion = (entrada) => {
   const costoInversor = inversor.costoTotal;                                  // I8 (costo/kW × kW)
   const costoInstalacion = instalacionBase * C.FACTOR_INSTALACION;            // I9 = Costos!D40*1.5
 
-  const baseComponentes = costoPaneles + costoEstructura + costoInversor + costoInstalacion;
+  // Batería (precio real dado por Gabriel, 6-nov-2026, ver constantes en datos.js):
+  // cada batería cuesta C.COSTO_BATERIA_UNIDAD_COP; cada accesorio Huawei LUNA (hace
+  // híbrido el sistema) cuesta C.COSTO_LUNA_HUAWEI_COP y soporta hasta
+  // C.BATERIAS_POR_LUNA baterías (4 baterías = 2 LUNA, no 1). Este costo entra al mismo
+  // tren de costos que paneles/estructura/inversor, así la utilidad queda escondida en
+  // el mismo 60/5/5% de ingeniería/mano de obra/comisión, igual que el resto del sistema.
+  const numBaterias = entrada.incluirBateria
+    ? Math.max(1, Math.round(entrada.capacidadBateria / C.CAPACIDAD_BATERIA_UNIDAD_KWH))
+    : 0;
+  const numLuna = numBaterias > 0 ? Math.ceil(numBaterias / C.BATERIAS_POR_LUNA) : 0;
+  const costoBateria = numBaterias * C.COSTO_BATERIA_UNIDAD_COP + numLuna * C.COSTO_LUNA_HUAWEI_COP;
+
+  const baseComponentes = costoPaneles + costoEstructura + costoInversor + costoInstalacion + costoBateria;
   const ingenieria = baseComponentes * (C.PCT_INGENIERIA / 100);              // I10
   const manoObra = (baseComponentes + ingenieria) * (C.PCT_MANO_OBRA / 100);  // I11
   const comision = (baseComponentes + ingenieria + manoObra) * (C.PCT_COMISION / 100); // I12
@@ -309,7 +324,7 @@ const calcularCotizacion = (entrada) => {
   // Tabla de flujo del leasing a 25 años (en millones de COP, como en la cotización).
   const aniosCredito = parametros.plazoLeasingAnios;
   const flujoLeasing = [];
-  let acumulado = 0;
+  let acumulado = -pagoInicial; // año 0: el pago inicial del leasing es desembolso del cliente
   for (let anio = 1; anio <= parametros.aniosProyeccion; anio += 1) {
     // Cuota: se paga durante los años de crédito (proporcional al último año parcial).
     let cuota = 0;
@@ -369,6 +384,9 @@ const calcularCotizacion = (entrada) => {
       comision,
       subtotal,
       descuento: descuentoCop,
+      numBaterias,
+      numLuna,
+      bateria: costoBateria,
       total: totalProyecto
     },
     financiero: {

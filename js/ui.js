@@ -943,7 +943,7 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   const statsExp = crear('div', { clase: 'pdf-stat-grid' });
   [
     ['🏗️', '+45', 'Proyectos instalados'],
-    ['⚡', '+500 kWp', 'Capacidad acumulada'],
+    ['⚡', '~700 kWp', 'Capacidad acumulada'],
     ['🏆', '125 kW', 'Proyecto más grande (sur de Colombia)']
   ].forEach(([ico, v, l]) => {
     const sc = crear('div', { clase: 'pdf-stat-card' });
@@ -982,9 +982,15 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   const bCon = crear('b', { texto: 'Con Zolaris' });
   bCon.style.color = 'var(--pdf-orange)';
   sc2.appendChild(bCon);
+  // 12-nov-2026: antes este texto mostraba el cruce exacto de las dos curvas (anioCruce,
+  // con 1 decimal) mientras el resto del PDF (hero y "cómo lo pagas") muestra
+  // f.paybackCompra (entero, mismo modelo con degradación). Daban números distintos en el
+  // mismo documento (ej. "3 años" vs "año 2,4") — zol-revisor lo marcó NO APTO en Elías
+  // Valencia y Jorge Dangond. Se deja un solo número: el oficial (f.paybackCompra). El punto
+  // naranja del gráfico sigue usando anioCruce para su posición real.
   sc2.appendChild(crear('span', {
     texto: anioCruce !== null
-      ? 'Punto de equilibrio ≈ año ' + formatoNumero(anioCruce, 1)
+      ? 'Punto de equilibrio ≈ año ' + formatoNumero(f.paybackCompra)
       : 'Inversión única, sin factura después'
   }));
   legend1.appendChild(sc1);
@@ -1203,8 +1209,12 @@ const prepararHojaPdf = (r, codigo, fechaISO, imagen) => {
   if (r.entrada.incluirBateria) {
     itemsTecnologia.push([
       '🔋',
-      'Respaldo de energía — batería de litio (LiFePO4) de ' + formatoNumero(r.entrada.capacidadBateria, 1) + ' kWh, compatible con tu inversor · incluida sin costo adicional',
-      ''
+      'Respaldo de energía — batería(s) de litio (LiFePO4) Huawei LUNA2000, ' + formatoNumero(r.entrada.capacidadBateria, 1) + ' kWh útiles en total',
+      '× ' + formatoNumero(r.costos.numBaterias, 0)
+    ], [
+      '🔌',
+      'Accesorio Huawei LUNA — convierte el sistema en híbrido con gestión de batería y respaldo automático',
+      '× ' + formatoNumero(r.costos.numLuna, 0)
     ]);
   }
   itemsTecnologia.push(
